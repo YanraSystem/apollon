@@ -320,18 +320,55 @@ export default function RecipePage() {
             "linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-primary) 100%)",
         }}
       >
-        {/* top kicker */}
+        {/* top kicker + return button */}
         <div
           className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-8 pt-10 text-[0.62rem] uppercase tracking-[0.32em] md:text-[0.65rem]"
           style={{ color: "var(--rose-poudre)" }}
         >
-          <span className="font-medium">
+          <button
+            onClick={() => router.push("/compose")}
+            className="group inline-flex items-center gap-3 px-4 py-2 font-medium tracking-[0.28em] transition-all duration-300"
+            style={{
+              border: "1px solid rgba(232, 168, 159, 0.35)",
+              color: "var(--text-primary)",
+              background: "rgba(58, 32, 80, 0.45)",
+              backdropFilter: "blur(8px)",
+              borderRadius: "2px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.background = "var(--or-doux)";
+              e.currentTarget.style.color = "var(--bg-deep)";
+              e.currentTarget.style.borderColor = "var(--or-doux)";
+              e.currentTarget.style.boxShadow =
+                "0 10px 30px rgba(212, 165, 116, 0.4), 0 2px 6px rgba(0,0,0,0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.background = "rgba(58, 32, 80, 0.45)";
+              e.currentTarget.style.color = "var(--text-primary)";
+              e.currentTarget.style.borderColor = "rgba(232, 168, 159, 0.35)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
+            <span className="transition-transform duration-300 group-hover:-translate-x-0.5">
+              ←
+            </span>
+            <span>Retour</span>
+          </button>
+          <span className="hidden font-medium md:inline">
             — {recipe.drapeau} {recipe.origine} · {recipe.categorie}
           </span>
           <button
             onClick={() => router.push("/")}
             className="font-medium tracking-[0.32em] transition-colors duration-300"
             style={{ color: "var(--text-secondary)" }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--rose-bright)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--text-secondary)")
+            }
           >
             NutriRecettes
           </button>

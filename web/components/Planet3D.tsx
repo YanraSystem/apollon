@@ -83,9 +83,9 @@ function Globe() {
 
     mat.onBeforeCompile = (shader) => {
       shader.uniforms.uLandmask = { value: landmask };
-      // Continents = or doux, mers = aubergine très foncé
-      shader.uniforms.uLand = { value: new THREE.Color("#D4A574") };
-      shader.uniforms.uSea = { value: new THREE.Color("#1A0A24") };
+      // Continents = vert nature, mers = bleu ocean
+      shader.uniforms.uLand = { value: new THREE.Color("#3F8B4F") };
+      shader.uniforms.uSea = { value: new THREE.Color("#1E5DA8") };
 
       shader.fragmentShader = shader.fragmentShader.replace(
         "uniform float opacity;",
@@ -230,7 +230,7 @@ function CuisinePoint({
       <mesh ref={glowRef}>
         <sphereGeometry args={[0.045, 16, 16]} />
         <meshBasicMaterial
-          color="#F4B5A6"
+          color="#FF8A3D"
           transparent
           opacity={0.3}
           depthWrite={false}
@@ -246,8 +246,8 @@ function CuisinePoint({
       >
         <sphereGeometry args={[0.025, 24, 24]} />
         <meshStandardMaterial
-          color="#F4B5A6"
-          emissive="#F4B5A6"
+          color="#FF8A3D"
+          emissive="#FF8A3D"
           emissiveIntensity={isHovered ? 1.4 : 0.75}
           roughness={0.4}
           metalness={0.1}
@@ -394,7 +394,7 @@ export default function Planet3D({
         <ambientLight intensity={0.4} />
         <directionalLight position={[3, 2, 4]} intensity={0.95} color="#FFF4E8" />
         {/* Point rose pâle pour éclairer les continents or */}
-        <pointLight position={[-2, -1, 3]} intensity={0.55} color="#F4B5A6" />
+        <pointLight position={[-2, -1, 3]} intensity={0.55} color="#FF8A3D" />
         {/* Subtle magenta rim light pour profondeur */}
         <pointLight position={[2, 1, -3]} intensity={0.3} color="#8B3A6A" />
 

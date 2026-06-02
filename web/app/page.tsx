@@ -114,22 +114,11 @@ export default function Home() {
           <div className="pointer-events-auto mt-10 flex flex-wrap gap-3">
             <button
               onClick={() => router.push("/compose")}
-              className="group px-7 py-3 text-[0.7rem] font-medium uppercase tracking-[0.25em] transition-all duration-300"
+              className="btn-3d btn-3d-gold group px-7 py-3 text-[0.7rem] font-medium uppercase tracking-[0.25em]"
               style={{
                 border: "1px solid rgba(232, 168, 159, 0.4)",
                 color: "var(--text-primary)",
                 background: "transparent",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "var(--or-doux)";
-                e.currentTarget.style.borderColor = "var(--or-doux)";
-                e.currentTarget.style.color = "var(--bg-deep)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.borderColor =
-                  "rgba(232, 168, 159, 0.4)";
-                e.currentTarget.style.color = "var(--text-primary)";
               }}
             >
               <span className="inline-flex items-center gap-3">

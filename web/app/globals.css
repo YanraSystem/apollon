@@ -173,6 +173,63 @@ a {
     0 0 120px rgba(107, 45, 92, 0.15);
 }
 
+/* ===================================================================
+ * Hover 3D premium sur les boutons
+ * Use : <button class="btn-3d"> ou directement style inline
+ * =================================================================== */
+.btn-3d {
+  transition: transform 0.25s cubic-bezier(0.25, 0, 0, 1),
+              box-shadow 0.25s cubic-bezier(0.25, 0, 0, 1),
+              background 0.25s ease,
+              border-color 0.25s ease,
+              color 0.25s ease;
+  will-change: transform;
+  transform-style: preserve-3d;
+}
+.btn-3d:hover {
+  transform: translateY(-2px) scale(1.015);
+  box-shadow:
+    0 12px 28px rgba(139, 58, 106, 0.35),
+    0 4px 10px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.btn-3d:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow:
+    0 4px 12px rgba(139, 58, 106, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Variante or pour boutons primary */
+.btn-3d-gold:hover {
+  background: linear-gradient(135deg, #E8C088 0%, #D4A574 100%) !important;
+  color: #1A0A24 !important;
+  border-color: transparent !important;
+  box-shadow:
+    0 14px 32px rgba(212, 165, 116, 0.45),
+    0 4px 12px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Variante rose pour CTAs subtle */
+.btn-3d-rose:hover {
+  background: linear-gradient(135deg, #F4B5A6 0%, #E8A89F 100%) !important;
+  color: #1A0A24 !important;
+  border-color: transparent !important;
+  box-shadow:
+    0 14px 32px rgba(232, 168, 159, 0.45),
+    0 4px 12px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+/* Glow magenta accent */
+.btn-3d-magenta:hover {
+  box-shadow:
+    0 12px 32px rgba(139, 58, 106, 0.55),
+    0 0 0 1px rgba(232, 168, 159, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
 /* Texture noise tres subtile sur fond sombre */
 .noise-overlay::after {
   content: "";
