@@ -98,7 +98,7 @@ def get_image(
     """Retourne une URL d'image (Spoonacular puis Pollinations en fallback)."""
     try:
         url = image_url_for(plat=plat, origine=origine, nom_image=nom_image)
-        return {"url": url}
+        return {"image_url": url}
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(
             status_code=500,

@@ -80,6 +80,24 @@ const ALIMENTS = {
 type Category = keyof typeof ALIMENTS;
 const CATEGORIES = Object.keys(ALIMENTS) as Category[];
 
+// Emoji par ingrédient (affichage uniquement, la valeur stockée reste le nom propre)
+const EMOJIS: Record<string, string> = {
+  Poulet: "🍗", Bœuf: "🥩", Agneau: "🐑", Porc: "🥓",
+  Poisson: "🐟", Saumon: "🍣", Thon: "🐠", Crevettes: "🍤",
+  Œuf: "🥚", Tofu: "🧈", Lentilles: "🫘", "Pois chiches": "🫛",
+  "Haricots rouges": "🫘",
+  Tomate: "🍅", Oignon: "🧅", Ail: "🧄", Carotte: "🥕",
+  Courgette: "🥒", Poivron: "🫑", Aubergine: "🍆", Épinards: "🥬",
+  Salade: "🥗", Brocoli: "🥦", Champignon: "🍄", Concombre: "🥒",
+  "Pomme de terre": "🥔",
+  Riz: "🍚", Pâtes: "🍝", Semoule: "🌾", Quinoa: "🌾",
+  Boulgour: "🌾", Pain: "🥖", Couscous: "🍲",
+  Basilic: "🌿", Persil: "🌿", Coriandre: "🌿", Menthe: "🍃",
+  Curry: "🌶️", Curcuma: "🟡", Cumin: "🟤", Paprika: "🔴",
+  Gingembre: "🫚", Cannelle: "🌰", Safran: "🌸", "Ras el hanout": "✨",
+  Lait: "🥛", Yaourt: "🍶", Fromage: "🧀", Beurre: "🧈", Crème: "🍦",
+};
+
 const REGIMES = [
   "Aucun",
   "Végétarien",
@@ -248,6 +266,7 @@ function IngredientPill({
   onToggle: () => void;
   disabled?: boolean;
 }) {
+  const emoji = EMOJIS[label] ?? "";
   return (
     <motion.button
       type="button"
@@ -261,7 +280,10 @@ function IngredientPill({
           : "border-charcoal/10 bg-creme text-charcoal hover:-translate-y-px hover:border-terracotta hover:shadow-[0_8px_24px_-16px_rgba(45,42,38,0.4)]"
       }`}
     >
-      <span className="relative z-10">{label}</span>
+      <span className="relative z-10 inline-flex items-center gap-2.5">
+        {emoji && <span className="text-base leading-none">{emoji}</span>}
+        <span>{label}</span>
+      </span>
       {selected && (
         <span
           className="absolute right-3 top-1/2 -translate-y-1/2 text-[0.6rem] tracking-[0.2em] text-terracotta"

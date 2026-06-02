@@ -1,8 +1,8 @@
 "use client";
 
-import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber";
+import { Canvas, useFrame, useLoader, type ThreeEvent } from "@react-three/fiber";
 import { Html, OrbitControls, Stars } from "@react-three/drei";
-import { Suspense, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 /* ----------------------------------------------------------------------------
@@ -53,21 +53,75 @@ function latLonToVec3(lat: number, lon: number, radius = 1): THREE.Vector3 {
 }
 
 /* ----------------------------------------------------------------------------
- * Globe — sphère charcoal mate avec grain
+ * Globe — sphère terre avec landmask : continents crème / mers charcoal
  * -------------------------------------------------------------------------- */
 
 function Globe() {
-  // Grain procédural en lecture de la position : reste très subtil
-  // (roughness 0.92, metalness 0.08 donne un rendu "lune mate" non plasticky)
+  // Texture earth specular (NASA via three.js examples) :
+  // - continents = pixels sombres (r ≈ 0)
+  // - océans     = pixels clairs (r ≈ 1)
+  // On inverse dans le shader pour mapper continents → crème, mers → charcoal.
+  const landmask = useLoader(THREE.TextureLoader, "/textures/earth-landmask.jpg");
+
+  useEffect(() => {
+    landmask.colorSpace = THREE.SRGBColorSpace;
+    landmask.anisotropy = 8;
+    landmask.needsUpdate = true;
+  }, [landmask]);
+
+  // Material custom : on garde MeshStandardMaterial pour profiter des lights,
+  // mais on override le diffuseColor via onBeforeCompile pour mixer entre
+  // crème (continents) et charcoal (mers) selon la luminance de la texture.
+  const material = useMemo(() => {
+    const mat = new THREE.MeshStandardMaterial({
+      roughness: 0.88,
+      metalness: 0.05,
+    });
+    // `map` doit être défini pour que `vMapUv` soit injecté par three.
+    mat.map = landmask;
+
+    mat.onBeforeCompile = (shader) => {
+      shader.uniforms.uLandmask = { value: landmask };
+      shader.uniforms.uCreme = { value: new THREE.Color("#FAF7F2") };
+      shader.uniforms.uCharcoal = { value: new THREE.Color("#2D2A26") };
+
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "uniform float opacity;",
+        `
+          uniform float opacity;
+          uniform sampler2D uLandmask;
+          uniform vec3 uCreme;
+          uniform vec3 uCharcoal;
+        `,
+      );
+
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <map_fragment>",
+        `
+          vec4 sampledLandmask = texture2D(uLandmask, vMapUv);
+          // Texture earth_specular : continents sombres (r≈0), mers claires (r≈1).
+          // On inverse pour obtenir un facteur "land" (1 sur continents, 0 sur mers).
+          float landFactor = 1.0 - sampledLandmask.r;
+          // Léger smoothstep pour adoucir les côtes sans flouter les contours.
+          landFactor = smoothstep(0.35, 0.7, landFactor);
+          vec3 mixedColor = mix(uCharcoal, uCreme, landFactor);
+          diffuseColor.rgb = mixedColor;
+        `,
+      );
+    };
+    return mat;
+  }, [landmask]);
+
+  // Cleanup material au démontage pour éviter les leaks GPU.
+  useEffect(() => {
+    return () => {
+      material.dispose();
+    };
+  }, [material]);
+
   return (
-    <mesh receiveShadow>
-      <sphereGeometry args={[1, 64, 64]} />
-      <meshStandardMaterial
-        color="#2D2A26"
-        roughness={0.92}
-        metalness={0.08}
-        flatShading={false}
-      />
+    <mesh receiveShadow material={material}>
+      <sphereGeometry args={[1, 96, 96]} />
     </mesh>
   );
 }
@@ -334,10 +388,10 @@ export default function Planet3D({
       }}
     >
       <Suspense fallback={null}>
-        {/* Lights */}
-        <ambientLight intensity={0.2} />
-        <directionalLight position={[3, 2, 4]} intensity={1.2} color="#FFF4E8" />
-        <pointLight position={[-2, -1, 3]} intensity={0.5} color="#C97B5F" />
+        {/* Lights — réduites pour ne pas brûler les continents crème */}
+        <ambientLight intensity={0.35} />
+        <directionalLight position={[3, 2, 4]} intensity={0.85} color="#FFF4E8" />
+        <pointLight position={[-2, -1, 3]} intensity={0.4} color="#C97B5F" />
 
         {/* Stars en arrière-plan, très subtiles */}
         <Stars
