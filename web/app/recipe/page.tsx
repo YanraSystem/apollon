@@ -1,0 +1,790 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+interface RecipeNutrition {
+  calories_par_personne: number;
+  proteines_g: number;
+  glucides_g: number;
+  lipides_g: number;
+  fibres_g: number;
+}
+
+interface Recipe {
+  nom: string;
+  origine: string;
+  drapeau: string;
+  categorie: string;
+  temps_total: string;
+  ingredients: string[];
+  etapes: string[];
+  astuce_chef?: string;
+  source: string;
+  image_url?: string;
+  nom_image?: string;
+  nutrition: RecipeNutrition;
+  indicateur_sante: "vert" | "orange" | "rouge";
+  indicateur_label: string;
+  anecdote_pays: string;
+  fun_fact: string;
+  niveau_authenticite: "Traditionnel" | "Adapte" | "Fusion";
+  score_compatibilite: number;
+  cout_estime_eur: number;
+  cout_par_personne_eur: number;
+  substitutions?: Record<string, string[]>;
+}
+
+const MOCK_RECIPE: Recipe = {
+  nom: "Tajine d'agneau aux abricots",
+  origine: "Maroc",
+  drapeau: "🇲🇦",
+  categorie: "Plat principal",
+  temps_total: "1h30",
+  ingredients: [
+    "500g d'agneau (epaule) coupe en cubes",
+    "2 oignons jaunes emincés",
+    "200g d'abricots secs",
+    "2 gousses d'ail ecrasées",
+    "1 cuillere a soupe de gingembre frais rapé",
+    "1 cuillere a cafe de cannelle moulue",
+    "1 cuillere a cafe de cumin",
+    "1 pincée de safran",
+    "2 cuilleres a soupe de miel",
+    "3 cuilleres a soupe d'huile d'olive",
+    "1 bouquet de coriandre fraiche",
+    "50g d'amandes effilées grillées",
+    "Sel, poivre du moulin",
+  ],
+  etapes: [
+    "Faire chauffer l'huile d'olive dans un tajine ou une cocotte en fonte. Y faire revenir l'agneau a feu vif jusqu'a coloration sur toutes les faces, environ 8 minutes.",
+    "Ajouter les oignons emincés, l'ail et le gingembre. Laisser fondre doucement 5 minutes en remuant.",
+    "Saupoudrer de cannelle, cumin et safran. Saler, poivrer. Bien enrober la viande des épices.",
+    "Verser 30cl d'eau chaude, couvrir et laisser mijoter a feu doux pendant 1 heure. Remuer toutes les 15 minutes.",
+    "Ajouter les abricots secs et le miel. Poursuivre la cuisson 20 minutes a découvert pour faire réduire la sauce.",
+    "Au moment de servir, parsemer d'amandes grillées et de coriandre fraiche ciselée. Accompagner de semoule fine ou de pain marocain.",
+  ],
+  astuce_chef:
+    "Pour un tajine encore plus parfumé, faites tremper les abricots 30 minutes dans de l'eau de fleur d'oranger avant de les incorporer. La sauce gagnera en finesse et en complexité aromatique.",
+  source: "Cuisine du monde",
+  image_url:
+    "https://images.unsplash.com/photo-1547928576-b822bc410bdf?auto=format&fit=crop&w=2400&q=85",
+  nom_image: "tagine",
+  nutrition: {
+    calories_par_personne: 620,
+    proteines_g: 42,
+    glucides_g: 48,
+    lipides_g: 28,
+    fibres_g: 6,
+  },
+  indicateur_sante: "vert",
+  indicateur_label: "Équilibré · riche en protéines",
+  anecdote_pays:
+    "Né dans les Berbères de l'Atlas, le tajine tire son nom du plat de terre cuite conique dans lequel il mijote. La condensation circule sous le chapeau, arrose la viande de ses propres sucs — une cuisson lente qui n'a pas changé depuis mille ans.",
+  fun_fact:
+    "Au Maroc, on dit qu'un tajine se mange a la main, avec du pain, jamais avec une fourchette. Le pain devient l'ustensile, et chaque convive plonge dans le plat commun — un geste de partage hérité du désert.",
+  niveau_authenticite: "Traditionnel",
+  score_compatibilite: 92,
+  cout_estime_eur: 14.5,
+  cout_par_personne_eur: 3.6,
+  substitutions: {
+    "abricots secs": ["pruneaux dénoyautés", "figues séchées", "dattes Medjool"],
+    agneau: ["épaule de mouton", "cuisse de poulet désossée"],
+    "amandes effilées": ["pignons de pin", "graines de sésame grillées"],
+  },
+};
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+const indicatorColor: Record<Recipe["indicateur_sante"], string> = {
+  vert: "#8B9A6C",
+  orange: "#C97B5F",
+  rouge: "#A85A3F",
+};
+
+const AJR = {
+  calories_par_personne: 2000,
+  proteines_g: 50,
+  glucides_g: 260,
+  lipides_g: 70,
+  fibres_g: 30,
+} as const;
+
+const PERSONNES = 4;
+
+function formatEur(value: number): string {
+  return value
+    .toFixed(2)
+    .replace(".", ",")
+    .replace(/,00$/, "")
+    + " €";
+}
+
+export default function RecipePage() {
+  const router = useRouter();
+  const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [imageBroken, setImageBroken] = useState(false);
+  const [openSubs, setOpenSubs] = useState(false);
+  const [shareLabel, setShareLabel] = useState("Partager");
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  // Read recipe from sessionStorage, or seed with MOCK to ease testing.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = window.sessionStorage.getItem("currentRecipe");
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as Recipe;
+        setRecipe(parsed);
+        return;
+      } catch {
+        // fall through to mock
+      }
+    }
+    // Dev convenience: seed the mock so the page can render even without /compose.
+    window.sessionStorage.setItem("currentRecipe", JSON.stringify(MOCK_RECIPE));
+    setRecipe(MOCK_RECIPE);
+  }, [router]);
+
+  // Optional async image fetch when image_url is missing.
+  useEffect(() => {
+    if (!recipe || recipe.image_url) return;
+    const controller = new AbortController();
+    const params = new URLSearchParams({
+      plat: recipe.nom,
+      origine: recipe.origine,
+      nom_image: recipe.nom_image ?? "",
+    });
+    fetch(`${API_URL}/api/image?${params.toString()}`, {
+      signal: controller.signal,
+    })
+      .then(async (r) => {
+        if (!r.ok) throw new Error("image fetch failed");
+        const data = (await r.json()) as { image_url?: string };
+        if (data.image_url) {
+          setRecipe((prev) => (prev ? { ...prev, image_url: data.image_url } : prev));
+        }
+      })
+      .catch(() => {
+        // ignore — fallback gradient handles it
+      });
+    return () => controller.abort();
+  }, [recipe]);
+
+  // GSAP scroll animations
+  useEffect(() => {
+    if (!recipe || !rootRef.current) return;
+    gsap.registerPlugin(ScrollTrigger);
+    const ctx = gsap.context(() => {
+      // Hero title subtle parallax
+      gsap.to("[data-hero-title]", {
+        y: -60,
+        opacity: 0.85,
+        ease: "none",
+        scrollTrigger: {
+          trigger: "[data-section='hero']",
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
+        },
+      });
+
+      // Section reveal
+      gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((el) => {
+        gsap.fromTo(
+          el,
+          { y: 50, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 1.1,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: el,
+              start: "top 82%",
+              toggleActions: "play none none reverse",
+            },
+          },
+        );
+      });
+
+      // Steps stagger
+      gsap.utils.toArray<HTMLElement>("[data-step]").forEach((el) => {
+        const num = el.querySelector("[data-step-num]");
+        const body = el.querySelector("[data-step-body]");
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: el,
+            start: "top 78%",
+            toggleActions: "play none none reverse",
+          },
+        });
+        if (num)
+          tl.fromTo(
+            num,
+            { x: -60, opacity: 0 },
+            { x: 0, opacity: 1, duration: 0.9, ease: "power3.out" },
+            0,
+          );
+        if (body)
+          tl.fromTo(
+            body,
+            { y: 30, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.9, ease: "power3.out" },
+            0.05,
+          );
+      });
+    }, rootRef);
+
+    return () => ctx.revert();
+  }, [recipe]);
+
+  const ajrRatios = useMemo(() => {
+    if (!recipe) return null;
+    const n = recipe.nutrition;
+    return {
+      calories: Math.min(1, n.calories_par_personne / AJR.calories_par_personne),
+      proteines: Math.min(1, n.proteines_g / AJR.proteines_g),
+      glucides: Math.min(1, n.glucides_g / AJR.glucides_g),
+      lipides: Math.min(1, n.lipides_g / AJR.lipides_g),
+      fibres: Math.min(1, n.fibres_g / AJR.fibres_g),
+    };
+  }, [recipe]);
+
+  if (!recipe) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-creme text-mute">
+        <p className="text-[0.7rem] uppercase tracking-[0.32em]">Chargement…</p>
+      </main>
+    );
+  }
+
+  const hasImage = Boolean(recipe.image_url) && !imageBroken;
+  const indicatorDot = indicatorColor[recipe.indicateur_sante];
+
+  const onSaveCarnet = () => {
+    try {
+      const raw = localStorage.getItem("carnet");
+      const list: Recipe[] = raw ? (JSON.parse(raw) as Recipe[]) : [];
+      // de-dup by nom
+      const exists = list.some((r) => r.nom === recipe.nom);
+      const next = exists ? list : [recipe, ...list];
+      localStorage.setItem("carnet", JSON.stringify(next));
+    } catch {
+      // noop
+    }
+  };
+
+  const onShare = async () => {
+    const text = `${recipe.nom} — ${recipe.origine} · ${recipe.temps_total}`;
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: recipe.nom, text, url });
+        setShareLabel("Partagé");
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(`${text}\n${url}`);
+        setShareLabel("Copié");
+      }
+      setTimeout(() => setShareLabel("Partager"), 1800);
+    } catch {
+      setShareLabel("Partager");
+    }
+  };
+
+  // Score circle stroke
+  const SCORE_RADIUS = 56;
+  const SCORE_C = 2 * Math.PI * SCORE_RADIUS;
+  const scoreOffset = SCORE_C * (1 - recipe.score_compatibilite / 100);
+
+  return (
+    <div ref={rootRef} className="bg-creme text-charcoal">
+      {/* ─────────────────────────────────────────────────────────────
+         SECTION 1 — HERO SPREAD
+         ────────────────────────────────────────────────────────────── */}
+      <section
+        data-section="hero"
+        className="relative flex h-[100svh] min-h-[640px] w-full items-end overflow-hidden bg-charcoal text-creme"
+      >
+        {hasImage ? (
+          <>
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: `url(${recipe.image_url})` }}
+              aria-hidden
+            />
+            {/* invisible img to detect broken urls */}
+            <img
+              src={recipe.image_url}
+              alt=""
+              className="hidden"
+              onError={() => setImageBroken(true)}
+            />
+          </>
+        ) : (
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{
+              background:
+                "linear-gradient(135deg, #8B9A6C 0%, #2D2A26 55%, #C97B5F 100%)",
+            }}
+            aria-hidden
+          >
+            <span className="select-none text-[18rem] leading-none opacity-40">
+              {recipe.drapeau}
+            </span>
+          </div>
+        )}
+
+        {/* gradient overlay */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(45,42,38,0.55) 0%, rgba(45,42,38,0) 28%, rgba(45,42,38,0) 50%, rgba(45,42,38,0.92) 100%)",
+          }}
+        />
+
+        {/* top kicker */}
+        <div className="absolute left-0 right-0 top-0 z-10 mx-auto flex max-w-7xl items-center justify-between px-8 pt-10 text-[0.62rem] uppercase tracking-[0.32em] text-creme/85 md:text-[0.65rem]">
+          <span className="font-medium">
+            — {recipe.drapeau} {recipe.origine} · {recipe.categorie}
+          </span>
+          <button
+            onClick={() => router.push("/")}
+            className="font-medium tracking-[0.32em] text-creme/70 transition-colors duration-300 hover:text-creme"
+          >
+            NutriRecettes
+          </button>
+        </div>
+
+        {/* title bottom-left */}
+        <div className="relative z-10 mx-auto w-full max-w-7xl px-8 pb-24 md:pb-28">
+          <h1
+            data-hero-title
+            className="font-serif italic leading-[0.92] tracking-[-0.035em] text-creme"
+            style={{ fontSize: "clamp(3.5rem, 9vw, 9rem)" }}
+          >
+            {recipe.nom}
+          </h1>
+          <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 text-[0.62rem] uppercase tracking-[0.32em] text-creme/80 md:text-[0.7rem]">
+            <span>{recipe.temps_total}</span>
+            <span className="inline-block h-[3px] w-[3px] rounded-full bg-creme/60" />
+            <span>{PERSONNES} pers.</span>
+            <span className="inline-block h-[3px] w-[3px] rounded-full bg-creme/60" />
+            <span>{recipe.source}</span>
+          </div>
+        </div>
+
+        {/* scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 text-center text-[0.58rem] uppercase tracking-[0.4em] text-creme/55">
+          <div className="mb-3 inline-block">Faites défiler</div>
+          <div className="mx-auto h-10 w-px bg-creme/40">
+            <motion.div
+              className="h-3 w-px bg-creme"
+              animate={{ y: [0, 28, 0] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+         SECTION 2 — INTRO ANECDOTE + FUN FACT
+         ────────────────────────────────────────────────────────────── */}
+      <section className="border-b border-charcoal/8 bg-creme px-8 py-32 md:py-40">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-16 md:grid-cols-12 md:gap-20">
+          <article className="md:col-span-7" data-reveal>
+            <p className="mb-10 text-[0.62rem] uppercase tracking-[0.32em] text-terracotta">
+              — Anecdote du pays
+            </p>
+            <p className="font-serif text-[1.5rem] italic leading-[1.45] text-charcoal md:text-[1.85rem]">
+              <span
+                className="float-left mr-3 mt-1 font-serif text-[5.5rem] not-italic leading-[0.85] text-terracotta md:text-[7rem]"
+                style={{ fontStyle: "italic" }}
+              >
+                {recipe.anecdote_pays.charAt(0)}
+              </span>
+              {recipe.anecdote_pays.slice(1)}
+            </p>
+          </article>
+
+          <aside className="md:col-span-5" data-reveal>
+            <div className="border-l-2 border-terracotta pl-8">
+              <p className="mb-6 text-[0.62rem] uppercase tracking-[0.32em] text-mute">
+                — Le saviez-vous
+              </p>
+              <p className="font-sans text-[1rem] leading-[1.75] text-warm-gray md:text-[1.05rem]">
+                {recipe.fun_fact}
+              </p>
+
+              <div className="mt-12 flex items-center gap-3 text-[0.62rem] uppercase tracking-[0.32em] text-mute">
+                <span
+                  className="inline-block h-2 w-2 rounded-full"
+                  style={{ backgroundColor: indicatorDot }}
+                />
+                <span>Niveau · {recipe.niveau_authenticite}</span>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+         SECTION 3 — INGREDIENTS
+         ────────────────────────────────────────────────────────────── */}
+      <section className="border-b border-charcoal/8 bg-creme-warm px-8 py-32 md:py-40">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-16 flex flex-col gap-6" data-reveal>
+            <p className="text-[0.62rem] uppercase tracking-[0.32em] text-terracotta">
+              — La liste
+            </p>
+            <h2
+              className="font-serif italic leading-[0.95] tracking-[-0.02em] text-charcoal"
+              style={{ fontSize: "clamp(2.75rem, 6vw, 5rem)" }}
+            >
+              Ingrédients
+            </h2>
+            <p className="text-[0.7rem] uppercase tracking-[0.32em] text-mute">
+              Pour {PERSONNES} personnes · {recipe.ingredients.length} éléments
+            </p>
+          </div>
+
+          <ul
+            className="grid grid-cols-1 gap-x-16 md:grid-cols-2"
+            data-reveal
+          >
+            {recipe.ingredients.map((ing, idx) => (
+              <li
+                key={`${ing}-${idx}`}
+                className="flex items-baseline gap-6 border-b border-charcoal/10 py-5"
+              >
+                <span className="font-serif text-[1.05rem] italic text-terracotta/70 tabular-nums">
+                  {String(idx + 1).padStart(2, "0")}
+                </span>
+                <span className="font-sans text-[0.98rem] leading-relaxed text-charcoal">
+                  {ing}
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          {recipe.substitutions && Object.keys(recipe.substitutions).length > 0 && (
+            <div className="mt-20" data-reveal>
+              <button
+                onClick={() => setOpenSubs((v) => !v)}
+                className="group flex w-full items-center justify-between border-t border-charcoal/15 py-6 text-left transition-colors duration-300 hover:border-terracotta"
+                aria-expanded={openSubs}
+              >
+                <span className="text-[0.7rem] uppercase tracking-[0.32em] text-charcoal group-hover:text-terracotta">
+                  Substitutions possibles · {Object.keys(recipe.substitutions).length}
+                </span>
+                <span
+                  className="font-serif text-[1.4rem] italic text-terracotta transition-transform duration-500"
+                  style={{ transform: openSubs ? "rotate(45deg)" : "rotate(0deg)" }}
+                >
+                  +
+                </span>
+              </button>
+
+              <motion.div
+                initial={false}
+                animate={{ height: openSubs ? "auto" : 0, opacity: openSubs ? 1 : 0 }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="grid grid-cols-1 gap-x-16 gap-y-10 pb-2 pt-10 md:grid-cols-2">
+                  {Object.entries(recipe.substitutions).map(([base, alts]) => (
+                    <div key={base}>
+                      <p className="mb-3 font-serif text-[1.1rem] italic text-charcoal">
+                        {base}
+                      </p>
+                      <ul className="space-y-2 text-[0.92rem] text-warm-gray">
+                        {alts.map((alt) => (
+                          <li
+                            key={alt}
+                            className="flex items-baseline gap-3 leading-relaxed"
+                          >
+                            <span className="inline-block h-px w-4 translate-y-[-0.35em] bg-mute/60" />
+                            <span>{alt}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+         SECTION 4 — PREPARATION
+         ────────────────────────────────────────────────────────────── */}
+      <section className="border-b border-charcoal/8 bg-creme px-8 py-32 md:py-44">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-20 flex flex-col gap-6" data-reveal>
+            <p className="text-[0.62rem] uppercase tracking-[0.32em] text-terracotta">
+              — La méthode
+            </p>
+            <h2
+              className="font-serif italic leading-[0.95] tracking-[-0.02em] text-charcoal"
+              style={{ fontSize: "clamp(2.75rem, 6vw, 5rem)" }}
+            >
+              Préparation
+            </h2>
+          </div>
+
+          <ol className="flex flex-col">
+            {recipe.etapes.map((etape, idx) => (
+              <li
+                key={idx}
+                data-step
+                className="grid grid-cols-12 items-start gap-6 border-t border-charcoal/10 py-14 md:gap-12 md:py-20"
+              >
+                <div
+                  data-step-num
+                  className="col-span-3 font-serif italic leading-none tracking-[-0.04em] text-terracotta md:col-span-3"
+                  style={{ fontSize: "clamp(4rem, 8vw, 8rem)" }}
+                >
+                  {String(idx + 1).padStart(2, "0")}
+                </div>
+                <div
+                  data-step-body
+                  className="col-span-9 pt-3 md:col-span-9 md:pt-6"
+                >
+                  <p className="font-sans text-[1.05rem] leading-[1.75] text-charcoal md:text-[1.15rem]">
+                    {etape}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+         SECTION 5 — ASTUCE CHEF
+         ────────────────────────────────────────────────────────────── */}
+      {recipe.astuce_chef && (
+        <section className="border-b border-charcoal/8 bg-creme-warm px-8 py-32 md:py-44">
+          <div className="mx-auto max-w-4xl text-center" data-reveal>
+            <span
+              className="block font-serif italic leading-none text-terracotta/70"
+              style={{ fontSize: "clamp(5rem, 10vw, 9rem)" }}
+              aria-hidden
+            >
+              &ldquo;
+            </span>
+            <blockquote
+              className="mt-2 font-serif italic leading-[1.4] text-charcoal"
+              style={{ fontSize: "clamp(1.4rem, 2.6vw, 1.95rem)" }}
+            >
+              {recipe.astuce_chef}
+            </blockquote>
+            <p className="mt-10 text-[0.62rem] uppercase tracking-[0.32em] text-mute">
+              — Astuce du chef
+            </p>
+          </div>
+        </section>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+         SECTION 6 — NUTRITION + COUT
+         ────────────────────────────────────────────────────────────── */}
+      <section className="border-b border-charcoal/8 bg-creme px-8 py-32 md:py-40">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-20 md:grid-cols-2 md:gap-28">
+          {/* Nutrition */}
+          <div data-reveal>
+            <p className="mb-8 text-[0.62rem] uppercase tracking-[0.32em] text-terracotta">
+              — Valeurs nutritionnelles
+            </p>
+            <h3
+              className="mb-12 font-serif italic leading-[0.95] tracking-[-0.02em] text-charcoal"
+              style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
+            >
+              Par personne
+            </h3>
+
+            <ul className="flex flex-col">
+              {([
+                ["Calories", `${recipe.nutrition.calories_par_personne} kcal`, ajrRatios?.calories ?? 0],
+                ["Protéines", `${recipe.nutrition.proteines_g} g`, ajrRatios?.proteines ?? 0],
+                ["Glucides", `${recipe.nutrition.glucides_g} g`, ajrRatios?.glucides ?? 0],
+                ["Lipides", `${recipe.nutrition.lipides_g} g`, ajrRatios?.lipides ?? 0],
+                ["Fibres", `${recipe.nutrition.fibres_g} g`, ajrRatios?.fibres ?? 0],
+              ] as const).map(([label, value, ratio]) => (
+                <li key={label} className="border-t border-charcoal/10 py-6">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[0.65rem] uppercase tracking-[0.32em] text-mute">
+                      {label}
+                    </span>
+                    <span className="font-serif text-[1.4rem] italic text-charcoal">
+                      {value}
+                    </span>
+                  </div>
+                  <div className="mt-4 h-px w-full bg-charcoal/10">
+                    <motion.div
+                      className="h-px bg-terracotta"
+                      initial={{ width: 0 }}
+                      whileInView={{ width: `${Math.round(ratio * 100)}%` }}
+                      viewport={{ once: true, amount: 0.4 }}
+                      transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                    />
+                  </div>
+                  <p className="mt-2 text-[0.6rem] uppercase tracking-[0.28em] text-mute/70">
+                    {Math.round(ratio * 100)}% AJR
+                  </p>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-10 flex items-center gap-3 border-t border-charcoal/10 pt-8 text-[0.65rem] uppercase tracking-[0.32em] text-charcoal">
+              <span
+                className="inline-block h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: indicatorDot }}
+              />
+              <span>{recipe.indicateur_label}</span>
+            </div>
+          </div>
+
+          {/* Coût + compatibilité */}
+          <div data-reveal className="flex flex-col gap-20">
+            <div>
+              <p className="mb-8 text-[0.62rem] uppercase tracking-[0.32em] text-terracotta">
+                — Coût estimé
+              </p>
+              <div
+                className="font-serif italic leading-none tracking-[-0.04em] text-terracotta"
+                style={{ fontSize: "clamp(5rem, 11vw, 9.5rem)" }}
+              >
+                {formatEur(recipe.cout_estime_eur)}
+              </div>
+              <p className="mt-8 text-[0.68rem] uppercase tracking-[0.32em] text-mute">
+                Coût total · environ {formatEur(recipe.cout_par_personne_eur)} / personne
+              </p>
+            </div>
+
+            <div className="flex items-center gap-10 border-t border-charcoal/10 pt-12">
+              {/* Score circle */}
+              <div className="relative h-32 w-32 shrink-0">
+                <svg
+                  viewBox="0 0 128 128"
+                  className="h-full w-full -rotate-90"
+                  aria-hidden
+                >
+                  <circle
+                    cx="64"
+                    cy="64"
+                    r={SCORE_RADIUS}
+                    fill="none"
+                    stroke="rgba(45,42,38,0.12)"
+                    strokeWidth="2"
+                  />
+                  <motion.circle
+                    cx="64"
+                    cy="64"
+                    r={SCORE_RADIUS}
+                    fill="none"
+                    stroke="#C97B5F"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeDasharray={SCORE_C}
+                    initial={{ strokeDashoffset: SCORE_C }}
+                    whileInView={{ strokeDashoffset: scoreOffset }}
+                    viewport={{ once: true, amount: 0.5 }}
+                    transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="font-serif text-[1.85rem] italic text-charcoal">
+                    {recipe.score_compatibilite}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <p className="text-[0.62rem] uppercase tracking-[0.32em] text-mute">
+                  — Score de compatibilité
+                </p>
+                <p className="mt-4 max-w-xs font-serif text-[1.15rem] italic leading-[1.5] text-charcoal">
+                  Cette recette correspond à vos ingrédients et préférences.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+         SECTION 7 — ACTIONS
+         ────────────────────────────────────────────────────────────── */}
+      <section className="bg-charcoal px-8 py-24 text-creme md:py-32">
+        <div className="mx-auto flex max-w-7xl flex-col gap-12">
+          <div className="flex items-center justify-between" data-reveal>
+            <p className="text-[0.62rem] uppercase tracking-[0.32em] text-creme/55">
+              — En cuisine
+            </p>
+            <p className="text-[0.62rem] uppercase tracking-[0.32em] text-creme/55">
+              Fin de la recette
+            </p>
+          </div>
+
+          <h2
+            data-reveal
+            className="max-w-3xl font-serif italic leading-[0.95] tracking-[-0.02em] text-creme"
+            style={{ fontSize: "clamp(2.25rem, 5vw, 4rem)" }}
+          >
+            Prêt à passer au feu ?
+          </h2>
+
+          <div
+            className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap"
+            data-reveal
+          >
+            <ActionButton
+              label="Mode pas-à-pas"
+              onClick={() => router.push("/cuisine")}
+              primary
+            />
+            <ActionButton label="Sauver au carnet" onClick={onSaveCarnet} />
+            <ActionButton
+              label="Composer une autre"
+              onClick={() => router.push("/compose")}
+            />
+            <ActionButton label={shareLabel} onClick={onShare} />
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ActionButton({
+  label,
+  onClick,
+  primary = false,
+}: {
+  label: string;
+  onClick: () => void;
+  primary?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`group inline-flex items-center gap-4 border px-7 py-4 text-[0.7rem] font-medium uppercase tracking-[0.25em] transition-all duration-300 ${
+        primary
+          ? "border-terracotta bg-terracotta text-creme hover:bg-creme hover:text-charcoal"
+          : "border-creme/25 text-creme hover:border-terracotta hover:bg-terracotta hover:text-creme"
+      }`}
+    >
+      <span>{label}</span>
+      <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
+        →
+      </span>
+    </button>
+  );
+}

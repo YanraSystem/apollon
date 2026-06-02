@@ -393,152 +393,226 @@ def splash_screen(height: int = 900):
     components.html(html, height=height, scrolling=False)
 
 
-def hero_personnage(height: int = 560):
-    """Hero accueil : personnage central (designe par le prof) avec ingredients qui volent autour."""
+def hero_personnage(height: int = 640):
+    """Hero accueil : layout magazine editorial 2 colonnes (typographie + personnage)."""
     perso_b64 = _b64_image("hero_perso_small.png")
     if not perso_b64:
         return globe_hero(height)  # fallback
+
+    # Charger fonts inline directement dans l'iframe (components.html isole le contexte)
+    from fonts import fonts_css as _ff
+    fonts_block = _ff()
 
     html = f"""
 <!DOCTYPE html>
 <html>
 <head>
+{fonts_block}
 <style>
   * {{ margin: 0; padding: 0; box-sizing: border-box; }}
   body {{
+    min-height: 100vh;
+    background: #FAF7F2;
+    background-image:
+      radial-gradient(ellipse 800px 600px at 80% 50%, rgba(201,123,95,0.06) 0%, transparent 70%);
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    color: #2D2A26;
+    position: relative;
+  }}
+  /* Texture noise subtile */
+  body::before {{
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 1;
+  }}
+
+  .scene {{
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    align-items: center;
+    min-height: 100vh;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 40px 64px;
+    gap: 48px;
+    z-index: 2;
+  }}
+
+  /* === Colonne gauche : typographie editoriale === */
+  .meta-top {{
+    font-family: 'Inter', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: #8B7E70;
+    margin-bottom: 32px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }}
+  .meta-top::after {{
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(45,42,38,0.15);
+    max-width: 80px;
+  }}
+
+  .title {{
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: clamp(72px, 9vw, 128px);
+    font-style: italic;
+    font-weight: 700;
+    line-height: 0.92;
+    letter-spacing: -0.045em;
+    color: #2D2A26;
+    margin-bottom: 28px;
+  }}
+
+  .subtitle {{
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: clamp(20px, 1.8vw, 26px);
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.45;
+    color: #5C5751;
+    max-width: 520px;
+    margin-bottom: 40px;
+  }}
+
+  .footer-line {{
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-top: 48px;
+    padding-top: 32px;
+    border-top: 1px solid rgba(45,42,38,0.12);
+    max-width: 520px;
+  }}
+  .footer-line .label {{
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #8B7E70;
+    font-weight: 600;
+  }}
+  .footer-line .value {{
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: #2D2A26;
+  }}
+  .footer-line .divider {{
+    width: 1px;
+    height: 24px;
+    background: rgba(45,42,38,0.15);
+  }}
+
+  /* === Colonne droite : perso === */
+  .perso-wrap {{
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
-    background:
-      radial-gradient(ellipse at top, #FAF7F2 0%, #F0E8DC 60%, #E3D5C0 100%);
-    overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }}
-  .scene {{ position: relative; width: 100%; height: 100vh; }}
 
-  .glow-bg {{
+  .number-bg {{
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 420px;
-    height: 420px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(201,123,95,0.15) 0%, rgba(139,154,108,0.08) 50%, transparent 70%);
-    animation: pulse 4s ease-in-out infinite;
-  }}
-  @keyframes pulse {{
-    0%, 100% {{ transform: translate(-50%, -50%) scale(1); }}
-    50% {{ transform: translate(-50%, -50%) scale(1.1); }}
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 24rem;
+    color: rgba(201,123,95,0.08);
+    line-height: 0.8;
+    z-index: 1;
+    left: -8%;
+    top: -6%;
+    user-select: none;
+    pointer-events: none;
   }}
 
   .perso {{
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    height: 78%;
-    max-height: 460px;
-    z-index: 5;
-    filter: drop-shadow(0 20px 40px rgba(0,0,0,0.15));
-    animation: bobbing 3s ease-in-out infinite;
+    position: relative;
+    z-index: 2;
+    height: 78vh;
+    max-height: 580px;
+    filter: drop-shadow(0 24px 48px rgba(45,42,38,0.18));
+    animation: bobbing 4s ease-in-out infinite;
   }}
   @keyframes bobbing {{
-    0%, 100% {{ transform: translate(-50%, -50%); }}
-    50% {{ transform: translate(-50%, -52%); }}
+    0%, 100% {{ transform: translateY(0); }}
+    50% {{ transform: translateY(-12px); }}
   }}
 
-  .ingredient {{
+  /* Trait ornemental sous le perso */
+  .ornament {{
     position: absolute;
-    font-size: 44px;
-    top: 50%;
-    left: 50%;
-    transform-origin: center;
-    animation-name: orbit;
-    animation-duration: 18s;
-    animation-iteration-count: infinite;
-    animation-timing-function: linear;
-    filter: drop-shadow(0 6px 12px rgba(0,0,0,0.2));
-    z-index: 3;
+    bottom: 8%;
+    right: -4%;
+    width: 180px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #C97B5F 50%, transparent);
+    z-index: 1;
   }}
-  .ingredient:nth-child(3) {{ animation-delay: 0s; font-size: 48px; }}
-  .ingredient:nth-child(4) {{ animation-delay: -3s; }}
-  .ingredient:nth-child(5) {{ animation-delay: -6s; font-size: 52px; }}
-  .ingredient:nth-child(6) {{ animation-delay: -9s; }}
-  .ingredient:nth-child(7) {{ animation-delay: -12s; font-size: 46px; }}
-  .ingredient:nth-child(8) {{ animation-delay: -15s; }}
-  .ingredient:nth-child(9) {{ animation-delay: -1.5s; font-size: 40px; }}
-  .ingredient:nth-child(10) {{ animation-delay: -7.5s; font-size: 50px; }}
-
-  @keyframes orbit {{
-    from {{ transform: translate(-50%, -50%) rotate(0deg) translateX(280px) rotate(0deg); }}
-    to   {{ transform: translate(-50%, -50%) rotate(360deg) translateX(280px) rotate(-360deg); }}
-  }}
-
-  .title-wrap {{
-    position: absolute;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
-    z-index: 10;
-  }}
-  .title-wrap h1 {{
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 64px;
-    font-weight: 700;
-    color: #2D2A26;
-    letter-spacing: -1.5px;
-    margin-bottom: 4px;
-    line-height: 1;
-    font-style: italic;
-  }}
-  .title-wrap p {{
-    font-family: "Brush Script MT", "Snell Roundhand", cursive;
-    color: #C97B5F;
-    font-size: 22px;
-    font-style: italic;
-    opacity: 0.9;
-  }}
-
-  .sparkles span {{
+  .ornament-dot {{
     position: absolute;
     width: 6px;
     height: 6px;
-    background: white;
     border-radius: 50%;
-    animation: sparkle 3s ease-in-out infinite;
-    box-shadow: 0 0 8px white;
+    background: #C97B5F;
+    z-index: 2;
   }}
-  .sparkles span:nth-child(1) {{ top: 20%; left: 30%; animation-delay: 0s; }}
-  .sparkles span:nth-child(2) {{ top: 30%; right: 25%; animation-delay: 0.5s; }}
-  .sparkles span:nth-child(3) {{ bottom: 35%; left: 35%; animation-delay: 1s; }}
-  .sparkles span:nth-child(4) {{ bottom: 25%; right: 30%; animation-delay: 1.5s; }}
-  @keyframes sparkle {{
-    0%, 100% {{ opacity: 0; transform: scale(0); }}
-    50% {{ opacity: 1; transform: scale(1); }}
+  .ornament-dot.d1 {{ top: 18%; right: 4%; }}
+  .ornament-dot.d2 {{ bottom: 28%; left: -2%; }}
+
+  /* Responsive */
+  @media (max-width: 880px) {{
+    .scene {{
+      grid-template-columns: 1fr;
+      padding: 24px 24px;
+      gap: 24px;
+    }}
+    .number-bg {{ display: none; }}
+    .title {{ font-size: 56px; }}
   }}
 </style>
 </head>
 <body>
   <div class="scene">
-    <div class="sparkles">
-      <span></span><span></span><span></span><span></span>
+    <div>
+      <div class="meta-top">Vol. I · 2026 · Cuisine du monde</div>
+      <h1 class="title">NutriRecettes</h1>
+      <p class="subtitle">Une recette du monde, composee a partir de ce qu'il te reste dans le frigo. Du tajine de Marrakech au pad thai d'Hanoi, en passant par la carbonara de Rome.</p>
+      <div class="footer-line">
+        <div>
+          <div class="label">Cuisines</div>
+          <div class="value">18 pays</div>
+        </div>
+        <div class="divider"></div>
+        <div>
+          <div class="label">Temps moyen</div>
+          <div class="value">30 a 45 min</div>
+        </div>
+        <div class="divider"></div>
+        <div>
+          <div class="label">Methode</div>
+          <div class="value">IA &amp; tradition</div>
+        </div>
+      </div>
     </div>
-    <div class="glow-bg"></div>
-    <img class="perso" src="{perso_b64}" alt="Mascotte NutriRecettes" />
-    <span class="ingredient">🍅</span>
-    <span class="ingredient">🥖</span>
-    <span class="ingredient">🌶️</span>
-    <span class="ingredient">🍣</span>
-    <span class="ingredient">🥕</span>
-    <span class="ingredient">🍋</span>
-    <span class="ingredient">🧅</span>
-    <span class="ingredient">🥦</span>
-    <div class="title-wrap">
-      <h1>NutriRecettes</h1>
-      <p>Coche tes aliments, le monde s'invite dans ton assiette</p>
+    <div class="perso-wrap">
+      <div class="number-bg">N°1</div>
+      <span class="ornament-dot d1"></span>
+      <span class="ornament-dot d2"></span>
+      <img class="perso" src="{perso_b64}" alt="NutriRecettes — la mascotte" />
+      <div class="ornament"></div>
     </div>
   </div>
 </body>

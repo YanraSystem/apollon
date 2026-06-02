@@ -1,3 +1,4 @@
+# Streamlit legacy
 .env
 .env.local
 .streamlit/secrets.toml
@@ -9,3 +10,20 @@ venv/
 *.pdf
 /tmp/
 *.log
+assets/inspiration_splash.png
+
+# Next.js (web/)
+web/node_modules/
+web/.next/
+web/.env.local
+web/.env*.local
+web/out/
+web/build/
+web/.vercel/
+web/next-env.d.ts
+web/tsconfig.tsbuildinfo
+
+# FastAPI (api/)
+api/__pycache__/
+api/.venv/
+api/.env

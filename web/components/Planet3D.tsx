@@ -1,0 +1,374 @@
+"use client";
+
+import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber";
+import { Html, OrbitControls, Stars } from "@react-three/drei";
+import { Suspense, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
+
+/* ----------------------------------------------------------------------------
+ * Data
+ * -------------------------------------------------------------------------- */
+
+type Cuisine = {
+  id: string;
+  name: string;
+  flag: string;
+  lat: number;
+  lon: number;
+};
+
+const CUISINES: ReadonlyArray<Cuisine> = [
+  { id: "france", name: "France", flag: "🇫🇷", lat: 46.2, lon: 2.2 },
+  { id: "italie", name: "Italie", flag: "🇮🇹", lat: 41.9, lon: 12.5 },
+  { id: "espagne", name: "Espagne", flag: "🇪🇸", lat: 40.4, lon: -3.7 },
+  { id: "grece", name: "Grèce", flag: "🇬🇷", lat: 39.0, lon: 22.0 },
+  { id: "chine", name: "Chine", flag: "🇨🇳", lat: 35.0, lon: 104.0 },
+  { id: "japon", name: "Japon", flag: "🇯🇵", lat: 36.2, lon: 138.0 },
+  { id: "thailande", name: "Thaïlande", flag: "🇹🇭", lat: 13.7, lon: 100.5 },
+  { id: "vietnam", name: "Vietnam", flag: "🇻🇳", lat: 14.0, lon: 108.0 },
+  { id: "inde", name: "Inde", flag: "🇮🇳", lat: 20.5, lon: 78.9 },
+  { id: "coree", name: "Corée", flag: "🇰🇷", lat: 35.9, lon: 127.7 },
+  { id: "maroc", name: "Maroc", flag: "🇲🇦", lat: 31.7, lon: -7.0 },
+  { id: "tunisie", name: "Tunisie", flag: "🇹🇳", lat: 33.8, lon: 9.5 },
+  { id: "turquie", name: "Turquie", flag: "🇹🇷", lat: 38.9, lon: 35.2 },
+  { id: "liban", name: "Liban", flag: "🇱🇧", lat: 33.8, lon: 35.8 },
+  { id: "usa", name: "USA", flag: "🇺🇸", lat: 39.8, lon: -98.5 },
+  { id: "mexique", name: "Mexique", flag: "🇲🇽", lat: 23.6, lon: -102.5 },
+  { id: "kenya", name: "Kenya", flag: "🇰🇪", lat: -0.0, lon: 37.9 },
+  { id: "egypte", name: "Égypte", flag: "🇪🇬", lat: 26.8, lon: 30.8 },
+];
+
+/* ----------------------------------------------------------------------------
+ * Geometry helpers
+ * -------------------------------------------------------------------------- */
+
+function latLonToVec3(lat: number, lon: number, radius = 1): THREE.Vector3 {
+  const phi = (90 - lat) * (Math.PI / 180);
+  const theta = (lon + 180) * (Math.PI / 180);
+  return new THREE.Vector3(
+    -radius * Math.sin(phi) * Math.cos(theta),
+    radius * Math.cos(phi),
+    radius * Math.sin(phi) * Math.sin(theta),
+  );
+}
+
+/* ----------------------------------------------------------------------------
+ * Globe — sphère charcoal mate avec grain
+ * -------------------------------------------------------------------------- */
+
+function Globe() {
+  // Grain procédural en lecture de la position : reste très subtil
+  // (roughness 0.92, metalness 0.08 donne un rendu "lune mate" non plasticky)
+  return (
+    <mesh receiveShadow>
+      <sphereGeometry args={[1, 64, 64]} />
+      <meshStandardMaterial
+        color="#2D2A26"
+        roughness={0.92}
+        metalness={0.08}
+        flatShading={false}
+      />
+    </mesh>
+  );
+}
+
+/* ----------------------------------------------------------------------------
+ * Atmosphere — double halo translucide terracotta
+ * -------------------------------------------------------------------------- */
+
+function Atmosphere() {
+  return (
+    <>
+      {/* Halo proche : très ténu */}
+      <mesh>
+        <sphereGeometry args={[1.015, 64, 64]} />
+        <meshBasicMaterial
+          color="#C97B5F"
+          transparent
+          opacity={0.06}
+          side={THREE.BackSide}
+          depthWrite={false}
+        />
+      </mesh>
+      {/* Halo large : suggère l'atmosphère */}
+      <mesh>
+        <sphereGeometry args={[1.08, 64, 64]} />
+        <meshBasicMaterial
+          color="#C97B5F"
+          transparent
+          opacity={0.04}
+          side={THREE.BackSide}
+          depthWrite={false}
+        />
+      </mesh>
+    </>
+  );
+}
+
+/* ----------------------------------------------------------------------------
+ * CuisinePoint — point lumineux + glow + tooltip HTML
+ * -------------------------------------------------------------------------- */
+
+type CuisinePointProps = {
+  cuisine: Cuisine;
+  interactive: boolean;
+  onHoverChange: (id: string | null) => void;
+  onSelect?: (id: string) => void;
+  isHovered: boolean;
+};
+
+function CuisinePoint({
+  cuisine,
+  interactive,
+  onHoverChange,
+  onSelect,
+  isHovered,
+}: CuisinePointProps) {
+  const groupRef = useRef<THREE.Group>(null);
+  const dotRef = useRef<THREE.Mesh>(null);
+  const glowRef = useRef<THREE.Mesh>(null);
+  // Phase de pulse aléatoire par point pour éviter le clignotement synchrone
+  const phase = useMemo(() => Math.random() * Math.PI * 2, []);
+
+  const position = useMemo(
+    () => latLonToVec3(cuisine.lat, cuisine.lon, 1.02),
+    [cuisine.lat, cuisine.lon],
+  );
+
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    // pulse sinusoïdal subtil 1 ↔ 1.1
+    const pulse = 1 + Math.sin(t * 1.6 + phase) * 0.05;
+    const hoverScale = isHovered ? 1.5 : 1;
+    if (dotRef.current) {
+      dotRef.current.scale.setScalar(pulse * hoverScale);
+    }
+    if (glowRef.current) {
+      glowRef.current.scale.setScalar(pulse * hoverScale * 1.05);
+    }
+  });
+
+  const handlePointerOver = (e: ThreeEvent<PointerEvent>) => {
+    if (!interactive) return;
+    e.stopPropagation();
+    document.body.style.cursor = "pointer";
+    onHoverChange(cuisine.id);
+  };
+
+  const handlePointerOut = (e: ThreeEvent<PointerEvent>) => {
+    if (!interactive) return;
+    e.stopPropagation();
+    document.body.style.cursor = "default";
+    onHoverChange(null);
+  };
+
+  const handleClick = (e: ThreeEvent<MouseEvent>) => {
+    if (!interactive) return;
+    e.stopPropagation();
+    onSelect?.(cuisine.id);
+  };
+
+  return (
+    <group ref={groupRef} position={position}>
+      {/* Glow translucide */}
+      <mesh ref={glowRef}>
+        <sphereGeometry args={[0.045, 16, 16]} />
+        <meshBasicMaterial
+          color="#C97B5F"
+          transparent
+          opacity={0.25}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Point principal — porte les events */}
+      <mesh
+        ref={dotRef}
+        onPointerOver={interactive ? handlePointerOver : undefined}
+        onPointerOut={interactive ? handlePointerOut : undefined}
+        onClick={interactive ? handleClick : undefined}
+      >
+        <sphereGeometry args={[0.025, 24, 24]} />
+        <meshStandardMaterial
+          color="#C97B5F"
+          emissive="#C97B5F"
+          emissiveIntensity={isHovered ? 1.2 : 0.6}
+          roughness={0.4}
+          metalness={0.1}
+          toneMapped={false}
+        />
+      </mesh>
+
+      {/* Tooltip — HTML overlay attaché au point en world space */}
+      {isHovered && interactive && (
+        <Html
+          position={[0, 0.08, 0]}
+          center
+          distanceFactor={2.4}
+          zIndexRange={[100, 0]}
+          style={{ pointerEvents: "none" }}
+        >
+          <div
+            style={{
+              transform: "translateY(-100%)",
+              background: "rgba(45, 42, 38, 0.92)",
+              color: "#FAF7F2",
+              padding: "12px 16px",
+              borderRadius: 4,
+              minWidth: 180,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+              backdropFilter: "blur(8px)",
+              fontFamily:
+                "var(--font-inter), ui-sans-serif, system-ui, sans-serif",
+              whiteSpace: "nowrap",
+              borderLeft: "2px solid #C97B5F",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 22,
+                lineHeight: 1,
+                marginBottom: 6,
+              }}
+            >
+              {cuisine.flag}
+            </div>
+            <div
+              style={{
+                fontFamily:
+                  "var(--font-cormorant), 'Cormorant Garamond', Georgia, serif",
+                fontStyle: "italic",
+                fontSize: 18,
+                lineHeight: 1.1,
+                marginBottom: 6,
+              }}
+            >
+              {cuisine.name}
+            </div>
+            <div
+              style={{
+                fontSize: 9,
+                letterSpacing: "0.25em",
+                textTransform: "uppercase",
+                color: "#C97B5F",
+                fontWeight: 500,
+              }}
+            >
+              Découvrir →
+            </div>
+          </div>
+        </Html>
+      )}
+    </group>
+  );
+}
+
+/* ----------------------------------------------------------------------------
+ * Scene wrapper — gère la rotation auto + hover global
+ * -------------------------------------------------------------------------- */
+
+type SceneProps = {
+  paused: boolean;
+  ambient: boolean;
+  onCuisineSelect?: (id: string) => void;
+};
+
+function Scene({ paused, ambient, onCuisineSelect }: SceneProps) {
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const sceneRef = useRef<THREE.Group>(null);
+
+  // Auto-rotation : mise en pause si paused, ralentie si ambient, stop au hover
+  useFrame((_, dt) => {
+    if (!sceneRef.current) return;
+    if (paused) return;
+    const baseSpeed = ambient ? 0.025 : 0.05;
+    const speed = hoveredId && !ambient ? 0 : baseSpeed;
+    sceneRef.current.rotation.y += dt * speed;
+  });
+
+  return (
+    <group ref={sceneRef}>
+      <Globe />
+      <Atmosphere />
+      {CUISINES.map((cuisine) => (
+        <CuisinePoint
+          key={cuisine.id}
+          cuisine={cuisine}
+          interactive={!ambient}
+          isHovered={hoveredId === cuisine.id}
+          onHoverChange={setHoveredId}
+          onSelect={onCuisineSelect}
+        />
+      ))}
+    </group>
+  );
+}
+
+/* ----------------------------------------------------------------------------
+ * Public component
+ * -------------------------------------------------------------------------- */
+
+export interface Planet3DProps {
+  /** Callback quand l'utilisateur clique sur un pays */
+  onCuisineSelect?: (cuisineId: string) => void;
+  /** Si true, désactive l'auto-rotation (utile en hero subtil) */
+  paused?: boolean;
+  /** Mode compact pour use as background (sans interactivité) */
+  ambient?: boolean;
+}
+
+export default function Planet3D({
+  onCuisineSelect,
+  paused = false,
+  ambient = false,
+}: Planet3DProps) {
+  return (
+    <Canvas
+      camera={{ position: [0, 0, 3], fov: 45 }}
+      gl={{ antialias: true, alpha: true }}
+      dpr={[1, 2]}
+      style={{
+        // En mode ambient on coupe les pointer events au niveau du canvas
+        // pour laisser la page parent recevoir le scroll / clics.
+        pointerEvents: ambient ? "none" : "auto",
+      }}
+    >
+      <Suspense fallback={null}>
+        {/* Lights */}
+        <ambientLight intensity={0.2} />
+        <directionalLight position={[3, 2, 4]} intensity={1.2} color="#FFF4E8" />
+        <pointLight position={[-2, -1, 3]} intensity={0.5} color="#C97B5F" />
+
+        {/* Stars en arrière-plan, très subtiles */}
+        <Stars
+          radius={50}
+          depth={50}
+          count={1000}
+          factor={4}
+          saturation={0}
+          fade
+          speed={0.3}
+        />
+
+        <Scene
+          paused={paused}
+          ambient={ambient}
+          onCuisineSelect={onCuisineSelect}
+        />
+
+        {/* Drag-to-rotate : désactivé en mode ambient */}
+        {!ambient && (
+          <OrbitControls
+            enableZoom={false}
+            enablePan={false}
+            autoRotate={false}
+            rotateSpeed={0.5}
+            // Ne pas laisser l'utilisateur passer en vue polaire extrême
+            minPolarAngle={Math.PI / 3}
+            maxPolarAngle={(2 * Math.PI) / 3}
+          />
+        )}
+      </Suspense>
+    </Canvas>
+  );
+}
