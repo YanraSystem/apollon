@@ -14,6 +14,7 @@ import streamlit.components.v1 as components_v1
 from recipe_engine import get_recipe, score_nutritionnel, adapter_portions
 from image_gen import image_url_for
 from pdf_export import build_pdf
+from fonts import fonts_css
 import components as ui
 
 # ------------------------------------------------------------
@@ -26,53 +27,149 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS global — palette editoriale (terracotta / sage / creme / charcoal)
+# Fonts custom embed (Cormorant Garamond + Inter via base64) — garanti cross-platform
+st.markdown(fonts_css(), unsafe_allow_html=True)
+
+# CSS global — palette editoriale + typo premium force sur tous les elements Streamlit
 st.markdown("""
 <style>
     :root {
       --c-creme: #FAF7F2;
+      --c-creme-warm: #F5F0E6;
       --c-terracotta: #C97B5F;
       --c-terracotta-dark: #A85A3F;
       --c-sage: #8B9A6C;
       --c-charcoal: #2D2A26;
       --c-warm-gray: #5C5751;
+      --c-mute: #8B7E70;
+      --serif: 'Cormorant Garamond', 'Cormorant', Georgia, 'Times New Roman', serif;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
-    .main { padding-top: 1rem; }
+
+    /* Force la typo Inter sur TOUT le DOM Streamlit (body, widgets, labels, boutons) */
+    html, body, .stApp, [class*="st-"], .stMarkdown, .stMarkdown p, .stMarkdown div, .stMarkdown span,
+    [data-testid="stCheckbox"] label, [data-testid="stCheckbox"] p,
+    [data-testid="stSelectbox"] label, [data-testid="stSlider"] label, [data-testid="stRadio"] label,
+    [data-testid="stNumberInput"] label, [data-testid="stTextInput"] label,
+    [data-testid="stMetricLabel"], [data-testid="stMetricValue"],
+    [data-baseweb="select"] *, [data-baseweb="input"] *,
+    .stCaption, button {
+      font-family: var(--sans) !important;
+      letter-spacing: -0.01em;
+    }
+
+    /* Titres Streamlit st.markdown : grosse serif italic editoriale */
+    .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4 {
+      font-family: var(--serif) !important;
+      font-weight: 700 !important;
+      color: var(--c-charcoal) !important;
+      letter-spacing: -0.03em !important;
+      line-height: 1.1 !important;
+    }
+    .stMarkdown h1 { font-size: 3.5rem !important; font-style: italic; }
+    .stMarkdown h2 { font-size: 2.6rem !important; font-style: italic; }
+    .stMarkdown h3 { font-size: 1.6rem !important; font-weight: 600 !important; }
+    .stMarkdown h4 { font-size: 1.2rem !important; font-weight: 600 !important; }
+
+    /* Caption Streamlit en italique terracotta */
+    [data-testid="stCaptionContainer"] {
+      font-family: var(--serif) !important;
+      font-style: italic !important;
+      color: var(--c-mute) !important;
+      font-size: 0.95rem !important;
+      letter-spacing: 0.01em !important;
+    }
+
+    /* Page padding plus genereux */
+    .main .block-container { padding-top: 2rem !important; padding-bottom: 4rem !important; max-width: 1200px !important; }
+
+    /* Boutons : style editorial */
     .stButton button {
-        border-radius: 4px;
-        font-weight: 500;
-        transition: all 0.25s ease;
-        letter-spacing: 0.3px;
+      border-radius: 2px !important;
+      font-weight: 500 !important;
+      font-family: var(--sans) !important;
+      transition: all 0.3s cubic-bezier(0.25, 0, 0, 1) !important;
+      letter-spacing: 0.04em !important;
+      text-transform: uppercase !important;
+      font-size: 0.75rem !important;
+      padding: 0.65rem 1.4rem !important;
+      border: 1px solid var(--c-charcoal) !important;
+      background: transparent !important;
+      color: var(--c-charcoal) !important;
     }
-    .stButton button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-    [data-testid="stHorizontalBlock"] { gap: 1rem; }
-    .badge {
-        display: inline-block;
-        padding: 0.35rem 0.9rem;
-        border-radius: 2px;
-        font-weight: 500;
-        font-size: 0.8rem;
-        letter-spacing: 0.5px;
-        margin-right: 8px;
-        text-transform: uppercase;
+    .stButton button:hover {
+      background: var(--c-charcoal) !important;
+      color: var(--c-creme) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(45, 42, 38, 0.12) !important;
     }
-    h1, h2, h3 { color: var(--c-charcoal) !important; letter-spacing: -0.5px; }
-    /* Touche editoriale : titres avec serif elegant */
-    h1 { font-family: "Cormorant Garamond", Georgia, serif !important; font-weight: 700 !important; }
-    /* Touche manuscrite pour accents */
-    .handwritten {
-      font-family: "Brush Script MT", "Snell Roundhand", cursive;
-      font-style: italic;
-      color: var(--c-terracotta);
-    }
-    /* Boutons primary repenses */
+    /* Bouton primary : terracotta fond */
     button[kind="primary"] {
       background: var(--c-charcoal) !important;
+      color: var(--c-creme) !important;
       border: 1px solid var(--c-charcoal) !important;
     }
     button[kind="primary"]:hover {
       background: var(--c-terracotta) !important;
       border-color: var(--c-terracotta) !important;
+      color: var(--c-creme) !important;
+    }
+
+    /* Inputs : sous-tons cremes, bordures subtiles */
+    [data-baseweb="select"] > div, [data-baseweb="input"] > div {
+      background: var(--c-creme-warm) !important;
+      border-radius: 2px !important;
+      border-color: rgba(45, 42, 38, 0.12) !important;
+    }
+
+    /* Progress bar : terracotta */
+    [data-testid="stProgress"] > div > div > div > div {
+      background: linear-gradient(90deg, var(--c-terracotta), var(--c-terracotta-dark)) !important;
+    }
+
+    /* Metrics : style raffine */
+    [data-testid="stMetric"] {
+      background: var(--c-creme-warm);
+      padding: 1rem 1.2rem;
+      border-radius: 4px;
+      border-left: 2px solid var(--c-terracotta);
+    }
+    [data-testid="stMetricLabel"] {
+      text-transform: uppercase;
+      letter-spacing: 0.1em !important;
+      font-size: 0.65rem !important;
+      color: var(--c-mute) !important;
+      font-weight: 600 !important;
+    }
+    [data-testid="stMetricValue"] {
+      font-family: var(--serif) !important;
+      font-size: 1.8rem !important;
+      font-weight: 600 !important;
+      color: var(--c-charcoal) !important;
+    }
+
+    /* Spacing Streamlit horizontal blocks */
+    [data-testid="stHorizontalBlock"] { gap: 1.5rem; }
+
+    /* Focus accessible */
+    *:focus-visible {
+      outline: 2px solid var(--c-terracotta) !important;
+      outline-offset: 3px !important;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 0.4rem 0.9rem;
+        border-radius: 2px;
+        font-family: var(--sans);
+        font-weight: 500;
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        margin-right: 6px;
+        text-transform: uppercase;
+        color: var(--c-charcoal);
+        background: var(--c-creme-warm);
+        border: 1px solid rgba(45,42,38,0.08);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -330,90 +427,98 @@ def page_generer():
 
 
 def render_recipe(recipe: dict):
-    """Affichage complet d'une recette avec toutes les sections enrichies."""
-    st.markdown("---")
+    """Affichage complet d'une recette — layout magazine editorial."""
+    st.markdown("<div style='height: 80px;'></div>", unsafe_allow_html=True)
 
-    # === En-tete recette ===
-    col_img, col_info = st.columns([1, 2])
+    # === Header magazine : kicker + titre serif geant + meta ===
+    drapeau = recipe.get('drapeau', '🌍')
+    origine = recipe.get('origine', '-')
+    nom = recipe['nom']
+    categorie = recipe.get('categorie', '').strip()
+    temps = recipe.get('temps_total', 'N/A')
 
-    with col_img:
-        img_src = recipe.get("image_url") or image_url_for(
-            recipe["nom"],
-            recipe.get("origine", ""),
-            recipe.get("nom_image", ""),
-        )
-        drapeau = recipe.get('drapeau', '🍽️')
-        # background-image CSS : si l'image charge, photo. Si rate, gradient beige avec drapeau.
-        # Pas de <img> donc pas de broken icon ni alt text qui depasse.
-        st.markdown(f"""
-        <div style="
-          width: 100%;
-          aspect-ratio: 4/3;
-          border-radius: 16px;
-          background-image: url('{img_src}'), linear-gradient(135deg, #F0E8DC, #E3D5C0);
-          background-size: cover, cover;
-          background-position: center, center;
-          background-repeat: no-repeat, no-repeat;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-          display: flex;
-          align-items: flex-end;
-          justify-content: flex-start;
-          padding: 16px;
-        ">
-          <div style="
-            background: rgba(45, 42, 38, 0.75);
-            color: #FAF7F2;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            backdrop-filter: blur(8px);
-          ">{drapeau} {recipe.get('origine', '')}</div>
-        </div>
-        """, unsafe_allow_html=True)
+    st.markdown(f"""
+    <div style="margin-bottom: 48px;">
+      <div style="font-family: 'Inter', sans-serif; font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; color: #8B7E70; margin-bottom: 16px;">
+        Une recette · {origine} {drapeau}
+      </div>
+      <h1 style="font-family: 'Cormorant Garamond', serif; font-size: 4.5rem; font-style: italic; font-weight: 700; line-height: 1.05; letter-spacing: -0.035em; color: #2D2A26; margin: 0 0 24px 0; max-width: 900px;">
+        {nom}
+      </h1>
+      <div style="display: flex; gap: 32px; font-family: 'Inter', sans-serif; font-size: 0.8rem; color: #5C5751; letter-spacing: 0.05em;">
+        <div><span style="color: #8B7E70; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.2em;">Temps</span><br><span style="font-size: 1rem; color: #2D2A26;">{temps}</span></div>
+        <div style="border-left: 1px solid #E3D5C0; padding-left: 32px;"><span style="color: #8B7E70; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.2em;">Personnes</span><br><span style="font-size: 1rem; color: #2D2A26;">{st.session_state.personnes}</span></div>
+        <div style="border-left: 1px solid #E3D5C0; padding-left: 32px;"><span style="color: #8B7E70; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.2em;">Categorie</span><br><span style="font-size: 1rem; color: #2D2A26;">{categorie or 'Plat'}</span></div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    with col_info:
-        st.markdown(f"## {recipe['drapeau']} {recipe['nom']}")
-        meta_html = f"""
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
-          <span class="badge" style="background: #F1F5F9; color: #475569;">🌍 {recipe.get('origine', '-')}</span>
-          <span class="badge" style="background: #F1F5F9; color: #475569;">🍽️ {recipe.get('categorie', 'Plat')}</span>
-          <span class="badge" style="background: #F1F5F9; color: #475569;">⏱️ {recipe.get('temps_total', 'N/A')}</span>
-          <span class="badge" style="background: #FEF3C7; color: #92400E;">👥 {st.session_state.personnes} pers.</span>
-        </div>
-        """
-        st.markdown(meta_html, unsafe_allow_html=True)
+    # === Image plein cadre (16:10 style magazine, plus large que haut) ===
+    img_src = recipe.get("image_url") or image_url_for(
+        recipe["nom"],
+        recipe.get("origine", ""),
+        recipe.get("nom_image", ""),
+    )
+    st.markdown(f"""
+    <div style="
+      width: 100%;
+      aspect-ratio: 16/9;
+      border-radius: 2px;
+      background-image: url('{img_src}'), linear-gradient(135deg, #F0E8DC, #E3D5C0);
+      background-size: cover, cover;
+      background-position: center, center;
+      box-shadow: 0 20px 60px rgba(45, 42, 38, 0.18);
+      margin-bottom: 48px;
+      position: relative;
+    ">
+      <div style="
+        position: absolute;
+        bottom: 24px;
+        left: 24px;
+        background: rgba(45, 42, 38, 0.85);
+        color: #FAF7F2;
+        padding: 10px 18px;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        backdrop-filter: blur(12px);
+      ">{drapeau} {origine}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-        # Boutons d'action
-        a1, a2, a3, a4 = st.columns(4)
-        with a1:
-            if st.button("👨‍🍳 Pas-a-pas", use_container_width=True):
-                st.session_state.page = "cuisine"
-                st.session_state.current_step = 0
-                st.rerun()
-        with a2:
-            if st.button("📖 Sauver", use_container_width=True):
-                if recipe not in st.session_state.carnet:
-                    st.session_state.carnet.append(recipe)
-                    st.success("Ajoutee !")
-                else:
-                    st.info("Deja sauvee")
-        with a3:
-            try:
-                pdf_bytes = build_pdf(recipe, st.session_state.personnes, st.session_state.regime)
-                st.download_button(
-                    label="📄 PDF",
-                    data=pdf_bytes,
-                    file_name=f"{recipe['nom'].replace(' ', '_')}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True,
-                )
-            except Exception:
-                st.button("📄 PDF", disabled=True, use_container_width=True)
-        with a4:
-            if st.button("🔗 Partager", use_container_width=True):
-                st.session_state.show_share = True
+    # === Actions row (boutons) ===
+    a1, a2, a3, a4 = st.columns(4)
+    with a1:
+        if st.button("Mode pas-a-pas", use_container_width=True, key="rec_btn_step"):
+            st.session_state.page = "cuisine"
+            st.session_state.current_step = 0
+            st.rerun()
+    with a2:
+        if st.button("Sauver au carnet", use_container_width=True, key="rec_btn_save"):
+            if recipe not in st.session_state.carnet:
+                st.session_state.carnet.append(recipe)
+                st.success("Ajoutee !")
+            else:
+                st.info("Deja sauvee")
+    with a3:
+        try:
+            pdf_bytes = build_pdf(recipe, st.session_state.personnes, st.session_state.regime)
+            st.download_button(
+                label="Telecharger PDF",
+                data=pdf_bytes,
+                file_name=f"{recipe['nom'].replace(' ', '_')}.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+                key="rec_dl_pdf",
+            )
+        except Exception:
+            st.button("PDF", disabled=True, use_container_width=True, key="rec_btn_pdf")
+    with a4:
+        if st.button("Partager", use_container_width=True, key="rec_btn_share"):
+            st.session_state.show_share = True
+
+    st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
 
 
     # === Panneau partage (s'affiche apres clic) ===
@@ -459,30 +564,55 @@ def render_recipe(recipe: dict):
 
     display_recipe = adapter_portions(recipe, ratio) if ratio != 1.0 else recipe
 
-    # === Ingredients + Etapes ===
-    st.markdown("### 🥘 Recette complete")
-    ing_col, etapes_col = st.columns([1, 2])
+    # === Ingredients + Etapes : layout magazine ===
+    st.markdown("<div style='height: 32px;'></div>", unsafe_allow_html=True)
+
+    ing_col, etapes_col = st.columns([1, 2], gap="large")
 
     with ing_col:
-        st.markdown("**Ingredients**")
-        for ing in display_recipe.get("ingredients", []):
-            st.markdown(f"- {ing}")
+        st.markdown("""
+        <div style="font-family: 'Inter', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: #C97B5F; margin-bottom: 8px; font-weight: 600;">La liste</div>
+        <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-style: italic; font-weight: 700; color: #2D2A26; margin: 0 0 24px 0; letter-spacing: -0.02em;">Ingredients</h3>
+        """, unsafe_allow_html=True)
 
-        # Substitutions intelligentes
+        ingredients_html = ""
+        for ing in display_recipe.get("ingredients", []):
+            ingredients_html += f"""<li style="padding: 10px 0; border-bottom: 1px solid rgba(45,42,38,0.06); font-family: 'Inter', sans-serif; font-size: 0.95rem; color: #2D2A26; list-style: none;">{ing}</li>"""
+        st.markdown(f"<ul style='padding: 0; margin: 0;'>{ingredients_html}</ul>", unsafe_allow_html=True)
+
+        # Substitutions
         subs = recipe.get("substitutions", {})
         if subs:
-            with st.expander(f"🔄 {len(subs)} substitutions possibles"):
+            with st.expander(f"Substitutions ({len(subs)})"):
                 for original, alternatives in subs.items():
                     if alternatives:
                         st.markdown(f"**{original.capitalize()}** → {' · '.join(alternatives)}")
 
     with etapes_col:
-        st.markdown("**Preparation**")
-        for i, etape in enumerate(display_recipe.get("etapes", []), 1):
-            st.markdown(f"**{i}.** {etape}")
+        st.markdown("""
+        <div style="font-family: 'Inter', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: #C97B5F; margin-bottom: 8px; font-weight: 600;">La methode</div>
+        <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-style: italic; font-weight: 700; color: #2D2A26; margin: 0 0 24px 0; letter-spacing: -0.02em;">Preparation</h3>
+        """, unsafe_allow_html=True)
 
+        etapes_html = ""
+        for i, etape in enumerate(display_recipe.get("etapes", []), 1):
+            etapes_html += f"""
+            <div style="display: flex; gap: 24px; padding: 18px 0; border-bottom: 1px solid rgba(45,42,38,0.06);">
+              <div style="font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; font-style: italic; font-weight: 400; color: #C97B5F; line-height: 1; min-width: 56px; flex-shrink: 0;">{i:02d}</div>
+              <div style="font-family: 'Inter', sans-serif; font-size: 1rem; color: #2D2A26; line-height: 1.65; padding-top: 6px;">{etape}</div>
+            </div>
+            """
+        st.markdown(etapes_html, unsafe_allow_html=True)
+
+    # === Astuce du chef : citation editoriale ===
     if recipe.get("astuce_chef"):
-        st.info(f"💡 **Astuce du chef** : {recipe['astuce_chef']}")
+        st.markdown(f"""
+        <div style="margin: 64px auto; max-width: 720px; text-align: center; padding: 0 24px;">
+          <div style="font-family: 'Cormorant Garamond', serif; font-size: 3rem; font-style: italic; color: #C97B5F; line-height: 0.5; margin-bottom: 8px;">"</div>
+          <p style="font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-style: italic; color: #2D2A26; line-height: 1.4; margin: 0 0 16px 0;">{recipe['astuce_chef']}</p>
+          <div style="font-family: 'Inter', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: #8B7E70; font-weight: 600;">— Astuce du chef</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     # === Immersion culturelle ===
     if recipe.get("anecdote_pays"):
