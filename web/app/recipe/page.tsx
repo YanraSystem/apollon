@@ -97,7 +97,8 @@ const MOCK_RECIPE: Recipe = {
   },
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// En prod : URL relative (same-origin Vercel). En dev : pointe sur FastAPI local.
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 const indicatorColor: Record<Recipe["indicateur_sante"], string> = {
   vert: "#8B9A6C",

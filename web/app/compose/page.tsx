@@ -405,9 +405,10 @@ function ComposeInner() {
     setSubmitting(true);
     setError(null);
     try {
-      const apiUrl =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await fetch(`${apiUrl}/api/recipe`, {
+      // En prod : URL relative (same-origin, rewrite Vercel vers fn Python).
+      // En dev : NEXT_PUBLIC_API_URL pointe sur FastAPI local 8000.
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "";
+      const res = await fetch(`${apiBase}/api/recipe`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
