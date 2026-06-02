@@ -2,11 +2,30 @@
 
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import NebulaSplash from "@/components/NebulaSplash";
 
 const Planet3D = dynamic(() => import("@/components/Planet3D"), { ssr: false });
 
 export default function Home() {
   const router = useRouter();
+  const [showSplash, setShowSplash] = useState(true);
+
+  // Si l'utilisateur a deja entre dans la session, skip le splash
+  useEffect(() => {
+    if (sessionStorage.getItem("nutri:entered") === "1") {
+      setShowSplash(false);
+    }
+  }, []);
+
+  const dismissSplash = () => {
+    sessionStorage.setItem("nutri:entered", "1");
+    setShowSplash(false);
+  };
+
+  if (showSplash) {
+    return <NebulaSplash onDismiss={dismissSplash} />;
+  }
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-charcoal text-creme">
