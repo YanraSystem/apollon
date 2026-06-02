@@ -1,4 +1,4 @@
-# Fiche oral — NutriRecettes
+# Fiche oral — Apollon
 
 > Aide-mémoire pour la présentation devant le prof. Tu peux lire chaque section telle quelle, pas besoin de tout retenir par cœur.
 
@@ -6,13 +6,13 @@
 
 ## 1 · Le pitch (30 secondes)
 
-> "NutriRecettes, c'est un site qui résout un problème simple : on ouvre le frigo, on a quelques ingrédients, et on ne sait pas quoi cuisiner. L'utilisateur coche ce qu'il a, choisit une cuisine du monde — la française, l'algérienne, la japonaise — et une intelligence artificielle écrit une recette inédite à partir de ses ingrédients. Avec le tableau nutritionnel, le coût estimé, une anecdote culturelle sur le plat, et même un mode pas-à-pas pour cuisiner. C'est le pendant nutrition d'une plateforme bien-être complète, l'autre partie de notre groupe développe l'app sport."
+> "Apollon, c'est un site qui résout un problème simple : on ouvre le frigo, on a quelques ingrédients, et on ne sait pas quoi cuisiner. L'utilisateur coche ce qu'il a, choisit une cuisine du monde — la française, l'algérienne, la japonaise — et une intelligence artificielle écrit une recette inédite à partir de ses ingrédients. Avec le tableau nutritionnel, le coût estimé, une anecdote culturelle sur le plat, et même un mode pas-à-pas pour cuisiner. C'est le pendant nutrition d'une plateforme bien-être complète, l'autre partie de notre groupe développe l'app sport."
 
 ---
 
 ## 2 · La démo à montrer (3 minutes)
 
-URL du site : **https://nutrirecettes.vercel.app**
+URL du site : **https://apollon.vercel.app**
 
 Étapes à dérouler devant le prof :
 
@@ -71,7 +71,7 @@ Tu n'as pas besoin de tout retenir, juste piocher ce qui te plaît.
 ### Hébergement
 
 - Tout est hébergé sur **Vercel** (la même plateforme que Next.js).
-- Le code source est sur **GitHub** : https://github.com/YanraSystem/nutrirecettes
+- Le code source est sur **GitHub** : https://github.com/YanraSystem/apollon
 - Pas de base de données traditionnelle : les recettes sont générées à la volée, le carnet personnel est stocké dans le navigateur de l'utilisateur (localStorage).
 
 ---
@@ -161,7 +161,7 @@ Pas de honte à dire "je ne sais pas" si c'est sur du code pointu. Mieux vaut ê
 
 ## 9 · Si on te demande "tu peux me montrer le code ?"
 
-Va sur **https://github.com/YanraSystem/nutrirecettes** et montre :
+Va sur **https://github.com/YanraSystem/apollon** et montre :
 
 1. Le **README** à la racine — il explique tout proprement
 2. Le dossier `web/app/` — c'est là où sont les pages
@@ -172,6 +172,6 @@ Va sur **https://github.com/YanraSystem/nutrirecettes** et montre :
 
 ## 10 · Phrase de conclusion (30 secondes)
 
-> "NutriRecettes répond à un besoin du quotidien — quoi cuisiner avec ce qu'on a — en combinant une intelligence artificielle qui rédige les recettes, une vraie base de données de photos de plats, et une expérience visuelle premium qui donne envie de voyager culinairement. C'est aussi la moitié nutrition d'un projet plus large où l'autre partie du groupe développe le pendant sportif."
+> "Apollon répond à un besoin du quotidien — quoi cuisiner avec ce qu'on a — en combinant une intelligence artificielle qui rédige les recettes, une vraie base de données de photos de plats, et une expérience visuelle premium qui donne envie de voyager culinairement. C'est aussi la moitié nutrition d'un projet plus large où l'autre partie du groupe développe le pendant sportif."
 
 Respire, parle posément. Bonne chance.

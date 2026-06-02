@@ -1,8 +1,8 @@
-# NutriRecettes
+# Apollon
 
 > Carnet de cuisine éditorial. Compose tes ingrédients, l'IA t'écrit une recette des cuisines du monde et te montre le plat fini.
 
-**Site en ligne : https://nutrirecettes.vercel.app**
+**Site en ligne : https://apollon.vercel.app**
 
 Projet étudiant développé en duo avec une app sport (le pendant nutrition d'une plateforme bien-être complète).
 
@@ -76,7 +76,7 @@ Tout est sur **Vercel** (frontend Next.js + serverless function Python). Pas de 
 ## Structure du projet
 
 ```
-nutrirecettes/
+apollon/
 ├── web/                        # ← Le projet
 │   ├── app/                    # Pages Next.js
 │   │   ├── page.tsx            # Splash + Home (planète 3D)
