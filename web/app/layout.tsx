@@ -18,7 +18,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "NutriRecettes — Une planete de saveurs",
+  title: "Apollon — Une planete de saveurs",
   description:
     "Compose, decouvre et cuisine. Un carnet de recettes editorial guide par une planete de saveurs.",
 };

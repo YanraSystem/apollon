@@ -370,7 +370,7 @@ export default function RecipePage() {
               (e.currentTarget.style.color = "var(--text-secondary)")
             }
           >
-            NutriRecettes
+            Apollon
           </button>
         </div>
 

@@ -71,7 +71,7 @@ export default function Home() {
             className="font-medium"
             style={{ color: "var(--text-primary)" }}
           >
-            NutriRecettes
+            Apollon
           </span>
           <span className="font-medium">N°01 — Édition Première · 2026</span>
         </header>

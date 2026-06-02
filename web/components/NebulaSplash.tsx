@@ -120,7 +120,7 @@ export default function NebulaSplash({ onDismiss }: NebulaSplashProps) {
                 "drop-shadow(0 0 40px rgba(232, 168, 159, 0.45)) drop-shadow(0 4px 30px rgba(0, 0, 0, 0.4))",
             }}
           >
-            NutriRecettes
+            Apollon
           </motion.h1>
 
           {/* Tagline */}
@@ -175,7 +175,7 @@ export default function NebulaSplash({ onDismiss }: NebulaSplashProps) {
           className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[0.6rem] uppercase tracking-[0.4em]"
           style={{ color: "rgba(248, 242, 234, 0.4)" }}
         >
-          © 2026 NutriRecettes — un carnet de cuisine
+          © 2026 Apollon — un carnet de cuisine
         </div>
       </motion.div>
     </AnimatePresence>
