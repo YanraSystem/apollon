@@ -40,17 +40,6 @@ export default function NebulaSplash({ onDismiss }: NebulaSplashProps) {
             "linear-gradient(160deg, #1A0A24 0%, #2A1338 55%, #3A2050 100%)",
         }}
       >
-        {/* Image NEBULA en background, opacite reduite, hue shift aubergine */}
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: "url(/textures/nebula-bg.png)",
-            opacity: 0.22,
-            filter: "blur(1px) hue-rotate(280deg) saturate(1.2)",
-            mixBlendMode: "screen",
-          }}
-        />
-
         {/* Glow magenta / violet radial pour la profondeur */}
         <div
           className="absolute inset-0"
