@@ -1,153 +1,174 @@
 # NutriRecettes
 
-Site web en Python qui genere une recette de cuisine **europeenne, asiatique ou orientale** a partir des aliments que tu coches. Pense comme le **complement nutrition de l'app sport** du groupe.
+> Carnet de cuisine éditorial. Compose tes ingrédients, l'IA t'écrit une recette des cuisines du monde et te montre le plat fini.
+
+**Site en ligne : https://nutrirecettes.vercel.app**
+
+Projet étudiant développé en duo avec une app sport (le pendant nutrition d'une plateforme bien-être complète).
 
 ---
 
-## Ce que ca fait
+## Aperçu
 
-1. Tu coches les aliments que t'as dans le frigo (proteines, legumes, feculents, herbes, laitiers)
-2. Tu choisis ton style de cuisine (europeenne / asiatique / orientale / surprise)
-3. Tu choisis le nombre de personnes et ton regime (vegetarien, halal, sans gluten, sans lactose)
-4. Tu cliques sur "Generer ma recette"
-5. L'app cherche d'abord dans une vraie base de recettes (TheMealDB), si rien matche ou si t'as choisi un style oriental/asiatique elle bascule sur **Gemini IA** pour t'inventer une recette
-6. Une image realiste du plat est generee automatiquement
-7. Tu peux **telecharger la recette en PDF**
+Splash cinématique d'entrée, puis une planète Terre 3D interactive où chaque pays est un point cliquable qui mène vers sa cuisine. 19 cuisines couvertes (France, Italie, Japon, Inde, Maroc, **Algérie**, Mexique, Liban, etc.).
 
-Bonus :
-- Score nutritionnel live : proteines / legumes / feculents
-- Astuce du chef sur les recettes IA
-- Footer qui fait le lien avec l'app sport du groupe
+L'utilisateur coche les ingrédients qu'il a dans son frigo, choisit une région, et l'IA génère :
 
----
-
-## Comment lancer le projet (a faire UNE SEULE FOIS)
-
-### Etape 1 : Installer Python
-
-Verifie que t'as Python 3.10 ou plus recent :
-
-```bash
-python3 --version
-```
-
-Si t'as rien, va sur https://www.python.org/downloads/ et installe la derniere version.
-
-### Etape 2 : Telecharger le projet
-
-Recupere le dossier `recette-collegue` (zip ou clone git) et ouvre un terminal **dedans**.
-
-### Etape 3 : Installer les dependances
-
-```bash
-pip3 install -r requirements.txt
-```
-
-### Etape 4 : Creer ta cle API Gemini (gratuit, 2 minutes)
-
-1. Va sur https://aistudio.google.com/app/apikey
-2. Connecte-toi avec ton compte Google
-3. Clique sur **"Create API Key"**
-4. Copie la cle qui s'affiche
-5. Dans le dossier du projet, **renomme** `.env.example` en `.env`
-6. Ouvre `.env` avec un editeur de texte (Notepad, TextEdit, VS Code...)
-7. Remplace `ta_cle_ici` par ta vraie cle. Resultat :
-
-```
-GEMINI_API_KEY=AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxx
-```
-
-### Etape 5 : Lancer l'app
-
-```bash
-streamlit run app.py
-```
-
-L'app s'ouvre automatiquement dans ton navigateur sur `http://localhost:8501`.
-
-**C'est tout. T'as plus rien a coder.**
+- Nom du plat + origine + drapeau pays
+- Liste des ingrédients (adaptable au nombre de personnes)
+- Étapes de préparation détaillées
+- Tableau nutritionnel (calories, protéines, glucides, lipides, fibres)
+- Indicateur santé (vert / orange / rouge)
+- Anecdote culturelle sur le plat
+- Score d'authenticité (Traditionnel / Adapté / Fusion)
+- Coût estimé en euros
+- Substitutions possibles pour chaque ingrédient
+- **Vraie photo du plat** (via Spoonacular)
+- Mode pas-à-pas avec timer pour cuisiner en suivant les étapes une par une
 
 ---
 
-## Demo de presentation (a montrer au prof)
+## Stack technique
 
-Pour que ca claque a l'oral, prepare ces 3 exemples :
+### Frontend (`/web`)
 
-| Demo | Aliments a cocher | Style | Effet |
-|------|------------------|-------|-------|
-| 1. **Couscous express** | Agneau, Carotte, Courgette, Semoule, Ras el hanout | Orientale | Recette IA, image, PDF |
-| 2. **Wok asiat** | Poulet, Poivron, Riz, Gingembre, Ail | Asiatique | Recette IA exotique |
-| 3. **Pates italiennes** | Tomate, Pates, Basilic, Ail | Europeenne | Vraie recette TheMealDB |
+| Techno | Usage |
+|---|---|
+| **Next.js 16** App Router | Framework React, SSR + génération statique |
+| **TypeScript** strict | Typage complet, zéro `any` |
+| **Tailwind CSS v4** | Styling utility-first |
+| **Three.js + React Three Fiber + drei** | Planète Terre 3D interactive (shader custom, 19 points pays géolocalisés) |
+| **GSAP + ScrollTrigger** | Animations scroll-driven sur la page recette |
+| **Framer Motion** | Microinteractions, transitions de page, animations de la bottom bar |
+| **Lenis** | Smooth scroll |
+| **Cormorant Garamond + Inter** (next/font/google) | Typographie éditoriale |
 
-Pour chaque demo, montre le **score nutritionnel** qui evolue en live quand tu coches.
+### Backend (`/web/api`)
 
----
+Une seule serverless function Vercel (Python 3.12) qui expose une API REST :
 
-## Comment expliquer le projet au prof
+| Endpoint | Description |
+|---|---|
+| `GET /api/health` | Healthcheck |
+| `POST /api/recipe` | Génère une recette à partir des ingrédients + cuisine + personnes + régime |
+| `GET /api/image` | Renvoie une URL d'image de plat (Spoonacular ou fallback) |
 
-**Argumentaire technique :**
+Stack Python :
 
-> "On a fait un site web en **Python avec Streamlit**, qui combine **une API gratuite de recettes (TheMealDB)** pour les plats europeens classiques et **l'IA Gemini de Google** pour les cuisines plus complexes comme l'orientale ou l'asiatique. L'app genere aussi des images via **Pollinations.ai** et un **export PDF avec fpdf2**. C'est le complement nutrition de l'app sport developpee par le reste du groupe."
+- **FastAPI** — wrapper REST minimal
+- **Anthropic SDK** (`claude-haiku-4-5`) — génération de recettes
+- **Requests** — appels Spoonacular + Pollinations + TheMealDB
+- **Pydantic** — validation des requêtes
 
-**Si le prof demande comment ca marche techniquement :**
+### APIs externes
 
-- `app.py` : interface Streamlit (le site web)
-- `recipe_engine.py` : moteur qui interroge TheMealDB + Gemini
-- `image_gen.py` : construit l'URL Pollinations pour l'image du plat
-- `pdf_export.py` : genere le PDF avec la lib fpdf2
-- Donnees user : pas stockees, tout est en session locale = **respect RGPD**
+- **Anthropic Claude API** — moteur de génération de recettes (latence 5-10s, coût ~$0.001/recette)
+- **Spoonacular API** — vraies photos de plats (150 req/jour gratuit)
+- **Pollinations.ai** — fallback IA si Spoonacular ne trouve pas (illimité gratuit, plus lent)
+- **TheMealDB** — base de recettes traditionnelles en fallback (gratuit, sans clé)
 
----
+### Hébergement
 
-## Deployer en ligne sur Streamlit Cloud (gratuit, URL partageable au prof)
-
-> Note : on n'utilise PAS Vercel pour ce projet. Vercel est concu pour Next.js / serverless. Streamlit a besoin d'un serveur Python persistant — Streamlit Community Cloud est l'option officielle, gratuite et zero-config.
-
-1. Va sur https://share.streamlit.io
-2. Connecte-toi avec ton compte GitHub
-3. Clique **"New app"** → choisis le repo `nutrirecettes` → branche `main` → main file `app.py`
-4. Clique **"Advanced settings"** → **"Secrets"** → colle :
-   ```toml
-   ANTHROPIC_API_KEY = "sk-ant-api03-..."
-   ```
-5. **"Deploy"** → l'app est en ligne en 2-3 minutes a une URL type `https://nutrirecettes-xxx.streamlit.app`
-
-Auto-deploy : chaque `git push` sur `main` redeploie automatiquement.
+Tout est sur **Vercel** (frontend Next.js + serverless function Python). Pas de base de données — les recettes sont calculées à la volée par Claude, le carnet personnel est stocké en `localStorage` du navigateur.
 
 ---
 
 ## Structure du projet
 
 ```
-recette-collegue/
-├── app.py              # Interface Streamlit (lance avec : streamlit run app.py)
-├── recipe_engine.py    # TheMealDB + Gemini IA
-├── image_gen.py        # Generation image plat (Pollinations.ai)
-├── pdf_export.py       # Export PDF de la recette
-├── requirements.txt    # Liste des libs Python a installer
-├── .env.example        # Modele pour ta cle API (a renommer en .env)
-├── .gitignore          # Fichiers a ignorer si tu utilises git
-└── README.md           # Ce fichier
+nutrirecettes/
+├── web/                        # ← Le projet
+│   ├── app/                    # Pages Next.js
+│   │   ├── page.tsx            # Splash + Home (planète 3D)
+│   │   ├── compose/page.tsx    # Picker d'ingrédients
+│   │   ├── recipe/page.tsx     # Affichage recette (layout magazine)
+│   │   ├── cuisine/page.tsx    # Mode pas-à-pas avec timer
+│   │   ├── carnet/page.tsx     # Bibliothèque des recettes sauvegardées
+│   │   ├── layout.tsx          # Layout global + fonts
+│   │   └── globals.css         # Palette éditoriale + utilitaires
+│   ├── components/
+│   │   ├── Planet3D.tsx        # Planète Terre interactive (Three.js)
+│   │   └── NebulaSplash.tsx    # Écran d'amorce cinématique
+│   ├── api/                    # Serverless functions Python
+│   │   ├── index.py            # FastAPI app
+│   │   ├── recipe_engine.py    # Moteur Claude + TheMealDB
+│   │   └── image_gen.py        # Spoonacular + Pollinations
+│   ├── lib/
+│   │   └── cuisine-mapping.ts  # Mapping pays → cuisine régionale
+│   ├── public/textures/        # Texture Earth landmask, splash background
+│   ├── package.json
+│   ├── requirements.txt        # Deps Python pour la function serverless
+│   └── vercel.json             # Routing + maxDuration
+└── README.md
 ```
 
 ---
 
-## En cas de probleme
+## Lancer en local
 
-| Probleme | Solution |
-|----------|----------|
-| `streamlit: command not found` | Refais `pip3 install -r requirements.txt`, puis essaie `python3 -m streamlit run app.py` |
-| `GEMINI_API_KEY non configuree` | Verifie que tu as bien renomme `.env.example` en `.env` et colle ta cle dedans |
-| L'image du plat ne s'affiche pas | C'est Pollinations.ai qui rame parfois. Recharge la page. |
-| TheMealDB renvoie rien | Normal pour cuisines exotiques, le fallback Gemini prend le relais |
-| PDF illisible (caracteres bizarres) | Le PDF utilise latin-1 ; les caracteres tres exotiques sont remplaces auto |
+### Prérequis
+
+- Node.js 20+
+- Python 3.11+
+- Une clé API Anthropic ([console.anthropic.com](https://console.anthropic.com))
+- Une clé API Spoonacular ([spoonacular.com/food-api](https://spoonacular.com/food-api))
+
+### Étape 1 — Frontend
+
+```bash
+cd web
+npm install
+cp .env.local.example .env.local
+# Édite .env.local et laisse NEXT_PUBLIC_API_URL=http://localhost:8000
+npm run dev
+```
+
+Frontend disponible sur **http://localhost:3000**
+
+### Étape 2 — Backend (optionnel pour développer)
+
+```bash
+cd web/api
+python -m venv .venv
+source .venv/bin/activate
+pip install -r ../requirements.txt
+export ANTHROPIC_API_KEY="sk-ant-..."
+export SPOONACULAR_API_KEY="..."
+uvicorn index:app --reload --port 8000
+```
+
+Backend sur **http://localhost:8000**.
+
+> En production, le backend tourne en serverless function sur Vercel (pas de serveur persistant). En dev local, on utilise uvicorn pour avoir le hot-reload.
 
 ---
 
-## Credits
+## Palette éditoriale "Night gastronomique"
 
-- **Streamlit** (interface) - https://streamlit.io
-- **TheMealDB** (base de recettes, API gratuite) - https://www.themealdb.com
-- **Google Gemini** (IA generative) - https://aistudio.google.com
-- **Pollinations.ai** (images IA gratuites) - https://pollinations.ai
-- **fpdf2** (export PDF) - https://py-pdf.github.io/fpdf2/
+```
+Backgrounds      Aubergine #1A0A24  →  #2A1338  →  #3A2050
+Accents chauds   Or doux #D4A574    Rose poudré #E8A89F    Magenta #8B3A6A
+Texte            Crème #F8F2EA      Gris rose #D4C5B9      Muted #8E7E78
+```
+
+Typographie : **Cormorant Garamond** italique pour les titres serif, **Inter** pour le corps.
+
+---
+
+## Captures
+
+- `/` — Splash cinématique, puis planète Terre 3D avec les 19 points pays
+- `/compose` — Picker éditorial 5 catégories d'ingrédients colorées
+- `/recipe` — Layout magazine 2 colonnes avec photo, gradient or/rose sur le titre
+- `/cuisine` — Mode pas-à-pas plein écran charcoal avec timer
+- `/carnet` — Bibliothèque des recettes sauvegardées en localStorage
+
+---
+
+## Crédits
+
+- Texture Earth landmask : NASA (domaine public, via three.js examples)
+- Photos de plats : Spoonacular API + Pollinations.ai en fallback
+- Génération de recettes : Anthropic Claude
+
+Projet réalisé dans le cadre d'un projet étudiant collaboratif (app nutrition × app sport).
